@@ -1,0 +1,129 @@
+# ==============================================================================
+# SIH26100: AI-Powered Integrated Bid Compliance Verification Platform
+# Production Deployment Orchestration
+# Target: HTTPS Reverse Proxy -> Next.js Frontend -> FastAPI Backend -> PostgreSQL+pgvector
+# ==============================================================================
+
+services:
+  # 1. Authoritative Production Database (PostgreSQL 16 + pgvector)
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: gem_prod_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?ERROR: POSTGRES_PASSWORD must be set in production}
+      POSTGRES_DB: ${POSTGRES_DB:-gem_compliance}
+    # Security: PostgreSQL port 5432 is strictly internal and never exposed to the host/internet
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-gem_compliance}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - gem_prod_network
+
+  # 2. Production FastAPI Backend
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: gem_prod_backend
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "/app/docker_entrypoint.sh"]
+    volumes:
+      - ./entrypoint.backend.sh:/app/docker_entrypoint.sh:ro
+      - backend_uploads:/app/uploads
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gem_compliance}
+      SYNC_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-gem_compliance}
+      # Production Hardening: Strict fail-fast, zero SQLite fallback
+      ALLOW_SQLITE_FALLBACK: "false"
+      # NVIDIA NIM Server Credentials (isolated strictly to backend container)
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:?ERROR: NVIDIA_API_KEY must be set in production}
+      NVIDIA_BASE_URL: ${NVIDIA_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      NVIDIA_MODEL: ${NVIDIA_MODEL:-openai/gpt-oss-20b}
+      NVIDIA_EMBEDDING_MODEL: ${NVIDIA_EMBEDDING_MODEL:-nvidia/nemotron-3-embed-1b}
+      # Single-domain CORS origin allowance
+      BACKEND_CORS_ORIGINS: '["https://${DOMAIN:-localhost}","http://${DOMAIN:-localhost}","https://localhost","http://localhost"]'
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    networks:
+      - gem_prod_network
+
+  # 3. Production Next.js Frontend
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: gem_prod_frontend
+    restart: unless-stopped
+    environment:
+      # Empty string routes requests relatively (/api/...) through the single-domain reverse proxy
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_PUBLIC_API_BASE_URL: ""
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
+    expose:
+      - "3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - gem_prod_network
+
+  # 4. HTTPS Edge Reverse Proxy (Caddy with Automatic TLS)
+  proxy:
+    image: caddy:2-alpine
+    container_name: gem_prod_proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"     # HTTP -> HTTPS redirect
+      - "443:443"   # HTTPS
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    networks:
+      - gem_prod_network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_uploads:
+    driver: local
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
+
+networks:
+  gem_prod_network:
+    driver: bridge

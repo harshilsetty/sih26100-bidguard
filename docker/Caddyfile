@@ -1,0 +1,41 @@
+{
+    admin off
+}
+
+# Global domain handler: defaults to localhost for self-signed TLS/HTTP, or public domain for auto-HTTPS Let's Encrypt
+{$DOMAIN:localhost} {
+    # Set maximum request body size to 60MB (accommodates 50MB PDF uploads with multipart overhead)
+    request_body {
+        max_size 60MB
+    }
+
+    # Enable modern streaming compression
+    encode zstd gzip
+
+    # Reverse proxy all /api/* requests to FastAPI backend
+    handle /api/* {
+        reverse_proxy backend:8000 {
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # Reverse proxy documentation endpoints to FastAPI backend
+    handle /docs* {
+        reverse_proxy backend:8000
+    }
+    handle /redoc* {
+        reverse_proxy backend:8000
+    }
+    handle /openapi.json {
+        reverse_proxy backend:8000
+    }
+
+    # Reverse proxy all frontend routes to Next.js
+    handle {
+        reverse_proxy frontend:3000 {
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+}

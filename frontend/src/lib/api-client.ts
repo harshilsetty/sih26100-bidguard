@@ -14,7 +14,12 @@ import {
   EvaluationRunResponse,
 } from "./types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL !== undefined
+    ? process.env.NEXT_PUBLIC_API_URL
+    : (process.env.NEXT_PUBLIC_API_BASE_URL !== undefined
+        ? process.env.NEXT_PUBLIC_API_BASE_URL
+        : "http://localhost:8000");
 
 export async function fetchSystemHealth(): Promise<SystemHealth> {
   const response = await fetch(`${API_BASE_URL}/api/v1/health`, {
