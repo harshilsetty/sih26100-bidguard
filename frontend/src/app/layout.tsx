@@ -65,6 +65,15 @@ export default function RootLayout({
                 >
                   Upload Tender PDF
                 </Link>
+                <Link
+                  href="/mock-data"
+                  className="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-blue-900 hover:bg-slate-100 transition flex items-center space-x-1"
+                >
+                  <span>Mock Explorer</span>
+                  <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-amber-100 text-amber-900">
+                    5K
+                  </span>
+                </Link>
               </nav>
             </div>
 

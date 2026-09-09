@@ -311,3 +311,62 @@ export async function submitOfficerOverride(
   return response.json();
 }
 
+// ============================================================================
+// Phase 6 Mock Verification Data Explorer
+// ============================================================================
+
+export async function fetchMockSourcesSummary(): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/mock-sources`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load mock sources summary: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchMockSourcesIntegrity(): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/mock-sources/integrity`, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load dataset integrity: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchMockSourceRecords(
+  source: string,
+  page = 1,
+  pageSize = 25,
+  search?: string,
+  status?: string,
+  showcaseOnly = false
+): Promise<any> {
+  const params = new URLSearchParams();
+  params.set("page", page.toString());
+  params.set("page_size", pageSize.toString());
+  if (search && search.trim()) params.set("search", search.trim());
+  if (status && status.trim()) params.set("status", status.trim());
+  if (showcaseOnly) params.set("showcase_only", "true");
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/mock-sources/${source}?${params.toString()}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Failed to fetch ${source} records: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchMockRecordDetail(source: string, verificationId: string): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/mock-sources/${source}/${encodeURIComponent(verificationId)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Failed to load record detail: ${res.status}`);
+  return res.json();
+}
+
+export async function fetchShowcaseBidders(bidderId?: string): Promise<any> {
+  const url = bidderId
+    ? `${API_BASE_URL}/api/v1/mock-sources/showcase?bidder_id=${encodeURIComponent(bidderId)}`
+    : `${API_BASE_URL}/api/v1/mock-sources/showcase`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Failed to load showcase bidders: ${res.status}`);
+  return res.json();
+}
+
+export function getMockSourceExportUrl(source: string): string {
+  return `${API_BASE_URL}/api/v1/mock-sources/${source}/export/csv`;
+}
+

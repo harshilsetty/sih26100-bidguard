@@ -57,7 +57,7 @@ async def init_db() -> None:
             logger.info("Database initialized successfully.")
     except Exception as e:
         err_str = str(e).lower()
-        if not current_is_sqlite and ("refused" in err_str or "1225" in err_str or "connection" in err_str):
+        if not current_is_sqlite and any(k in err_str for k in ["refused", "1225", "10061", "connect", "connection", "timeout", "oserror", "failed"]):
             logger.warning(
                 f"PostgreSQL connection refused ({e}). Falling back to local SQLite database (gem_compliance.db)..."
             )

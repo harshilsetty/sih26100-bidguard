@@ -153,3 +153,15 @@ The dataset defines 10 fixed showcase bidders (`BIDDER-01` through `BIDDER-10`) 
   - *Phase 6.7*: Statutory Risk Scoring & Bidder Qualification Ranking
   - *Phase 6.8*: Procurement Officer Verification UI Dashboard
 
+### 6. Mock Data Explorer (Read-Only Inspection UI & API)
+The platform includes a dedicated read-only **Mock Verification Data Explorer** accessible at route `/mock-data` and backed by `/api/v1/mock-sources`.
+
+- **Source of Truth**: All records are queried directly from the relational database tables (`mock_gstn_records`, `mock_udyam_records`, etc.), not by reading raw JSON files directly in the frontend.
+- **Read-Only Nature**: Strictly an inspection, administrative, and demonstration tool. It does not perform live verification or mutate evidence.
+- **Top Summary & Dataset Integrity**: Live verification of the 5,000 synthetic records, confirming uniqueness of primary keys and verification IDs, and verifying 100% mock labeling.
+- **Showcase Bidders Multi-Registry Inspector**: Provides a synchronized, 5-registry view for showcase bidders `BIDDER-01` through `BIDDER-10` to validate cross-source mappings prior to Phase 6.3.
+- **Demo Scenarios**: Interactive inspection of the 5 planted contradiction fixtures (Turnover shortfall, MSE exemption, Make in India local content deficit, Entity legal name variation, and Inactive statutory registrations).
+- **Server-Side Search & Pagination**: Search by GSTIN, CIN, PAN, Udyam number, company name, or category with page sizes from 25 to 100.
+- **Export**: Generates clean, read-only CSV downloads per registry domain for external analysis.
+
+

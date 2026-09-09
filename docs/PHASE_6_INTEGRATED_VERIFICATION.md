@@ -241,15 +241,42 @@ Located in `frontend/src/app/tenders/[id]/bidders/page.tsx`:
 
 ---
 
-## 12. Current Status & Future Roadmap
+## 12. Mock Verification Data Explorer (Read-Only Inspection Suite)
+
+> **IMPORTANT ARCHITECTURAL BOUNDARY**:
+> **The explorer is an inspection tool only. It does not perform government verification.**
+> It queries database tables directly to allow evaluators and officers to inspect synthetic fixtures and validate cross-source mappings prior to Phase 6.3 evidence fusion.
+
+### 12.1 Backend Endpoints
+Located in `backend/app/api/v1/mock_sources.py` (mounted at `/api/v1/mock-sources`):
+1. `GET /api/v1/mock-sources`: Summary counts for all 5 registries (1,000 each, 5,000 total).
+2. `GET /api/v1/mock-sources/integrity`: Deep validation report verifying `is_mock=True`, source label correctness, identifier uniqueness, 10 showcase bidder mappings, and 5 planted scenario fixtures.
+3. `GET /api/v1/mock-sources/showcase`: Multi-registry synchronized inspection for showcase bidders `BIDDER-01` through `BIDDER-10`.
+4. `GET /api/v1/mock-sources/{source}`: Paginated records query with server-side substring search (`search`), status filtering (`status`), and showcase filter (`showcase_only`). Supports `page_size` between 1 and 100.
+5. `GET /api/v1/mock-sources/{source}/{verification_id}`: Detailed record view including structured attributes and simulated raw API JSON payload.
+6. `GET /api/v1/mock-sources/{source}/export/csv`: Streaming CSV export for offline review.
+
+### 12.2 Frontend UI Route (`/mock-data`)
+Located in `frontend/src/app/mock-data/page.tsx`:
+- **Top Summary Metrics**: 5 Registries, 5,000 Records, 10 Showcase Bidders, 5 Demo Scenarios.
+- **Dataset Integrity Panel**: Collapsible diagnostic panel displaying per-source and overall integrity validation with `STATUS: PASS`.
+- **Demo Scenarios Selector**: Interactive fixture selector targeting the 5 contradiction scenarios (Turnover, MSE exemption, Local content deficit, Entity name variation, Inactive status).
+- **Showcase Bidders Cross-Registry Inspector**: Synchronized 5-column card view inspecting any showcase bidder simultaneously across GSTN, Udyam, MCA, Income Tax, and Make in India.
+- **Paginated Records Table**: Responsive table with prominent `MOCK` badges, status color coding, and quick `"Inspect"` action opening the Record Detail Inspector modal.
+
+---
+
+## 13. Current Status & Future Roadmap
 
 | Milestone | Scope | Status |
 | :--- | :--- | :--- |
 | **Phase 6.1** | Source Contracts (Pydantic) + Database Models (SQLAlchemy) | **COMPLETED & VERIFIED** |
 | **Phase 6.2** | Deterministic Synthetic Datasets (5,000 records) + Idempotent Seeder | **COMPLETED & VERIFIED** |
+| **Phase 6 Explorer** | Read-Only Mock Verification Data Explorer (UI & API) | **COMPLETED & VERIFIED** |
 | **Phase 6.3** | Mock Source Providers & Gateway Adapters | *PLANNED (Awaiting Authorization)* |
 | **Phase 6.4** | Runtime Verification Gateway & Request Routing | *PLANNED* |
 | **Phase 6.5** | Multi-Source Evidence Fusion (Document + Registry) | *PLANNED* |
 | **Phase 6.6** | Cross-Source Contradiction Engine Integration | *PLANNED* |
 | **Phase 6.7** | Statutory Risk Scoring & Final Bidder Qualification Ranking | *PLANNED* |
 | **Phase 6.8** | Procurement Officer Integrated Verification UI Dashboard | *PLANNED* |
+
