@@ -21,6 +21,7 @@ import {
   Search,
   BookOpen,
   ArrowLeft,
+  ArrowRight,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -231,7 +232,7 @@ export default function TenderClausesPage({
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setIsAddModalOpen(true)}
               className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-medium transition"
@@ -241,10 +242,17 @@ export default function TenderClausesPage({
             </button>
             <button
               onClick={handleConfirmAll}
-              className="inline-flex items-center space-x-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow-sm"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition shadow-sm"
             >
               <Lock className="w-3.5 h-3.5" />
               <span>Confirm & Lock Requirements</span>
+            </button>
+            <button
+              onClick={() => router.push(`/tenders/${tenderId}/bidders`)}
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition shadow-sm"
+            >
+              <span>Proceed to Bidders & Evaluation</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

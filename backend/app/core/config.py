@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str = ""
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
     NVIDIA_MODEL: str = "openai/gpt-oss-20b"
+    NVIDIA_EMBEDDING_MODEL: str = "nvidia/nemotron-3-embed-1b"
+    EMBEDDING_DIM: int = 2048
+
+    # Evidence Retrieval
+    DEFAULT_RETRIEVAL_TOP_K: int = 3
 
     # Uploads & Storage
     UPLOAD_DIR: str = "uploads"

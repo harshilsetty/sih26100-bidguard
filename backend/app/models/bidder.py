@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Numeric, Integer, ForeignKey
+from sqlalchemy import Column, String, Numeric, Integer, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -16,6 +16,7 @@ class Bidder(Base, BaseModelMixin):
     # Relationships
     tender = relationship("Tender", back_populates="bidders")
     documents = relationship("BidDocument", back_populates="bidder", cascade="all, delete-orphan")
+    chunks = relationship("DocumentChunk", back_populates="bidder", cascade="all, delete-orphan")
     evaluations = relationship("ComplianceEvaluation", back_populates="bidder", cascade="all, delete-orphan")
 
 
@@ -25,7 +26,11 @@ class BidDocument(Base, BaseModelMixin):
     bidder_id = Column(UUID(as_uuid=True), ForeignKey("bidders.id", ondelete="CASCADE"), nullable=False, index=True)
     file_name = Column(String(300), nullable=False)
     file_path = Column(String(1000), nullable=False)
+    doc_type = Column(String(100), nullable=True)  # e.g., TECHNICAL_PROPOSAL, FINANCIAL_STATEMENT, etc.
     total_pages = Column(Integer, default=0, nullable=False)
+    empty_pages_count = Column(Integer, default=0, nullable=False)
+    extraction_status = Column(String(50), default="PENDING", nullable=False)  # PENDING, EXTRACTED, EMPTY_SCANNED, FAILED
+    error_message = Column(Text, nullable=True)
 
     # Relationships
     bidder = relationship("Bidder", back_populates="documents")

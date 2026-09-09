@@ -103,3 +103,53 @@ npm run dev
 - [x] SQLAlchemy models for Tenders, Clauses, Bidders, Chunks, and Evaluations
 - [x] NVIDIA NIM client wrapper configured with `openai/gpt-oss-20b`
 - [x] Next.js frontend with Tailwind CSS and system status dashboard
+
+---
+
+## 🏛️ Phase 6 — Mock Integrated Verification Foundation
+
+### 1. Purpose & Strategic Value
+In public procurement on the Government e-Marketplace (GeM), bidder self-declarations and uploaded PDFs cannot be relied upon in isolation. Unscrupulous bidders may inflate turnover, falsely claim Micro/Small Enterprise (MSE) exemption benefits, submit fabricated Make in India (MII) local content certificates, or operate under inactive/cancelled statutory registrations.
+
+Phase 6 establishes the architectural foundation for **Multi-Source Cross-Verification**. It models authoritative government registers as isolated, typed contracts and deterministic synthetic datasets, allowing the platform to detect cross-source contradictions and verify statutory eligibility before contract award.
+
+> **CRITICAL DISCLAIMER**:
+> **No live government portal/API data is used in this phase.**
+> All external verification data consists strictly of deterministic, synthetic mock records generated for the Smart India Hackathon (SIH 2026) demonstration. No real government credentials, live API calls, private corporate data, or real PII are utilized.
+
+### 2. Five Authoritative Mock Source Domains
+The verification foundation models 5 key government registries:
+
+| Domain | Source Code | Primary Identity | Key Attributes Verified | Synthetic Records |
+| :--- | :--- | :--- | :--- | :--- |
+| **GSTN** | `GSTN` | GSTIN (15 chars) | Annual verified turnover, registration status, filing regularity | 1,000 |
+| **Udyam / MSME** | `UDYAM` | Udyam Reg. No. | Enterprise classification (Micro/Small/Medium), statutory MSE exemption status | 1,000 |
+| **MCA** | `MCA` | CIN (21 chars) | Corporate legal name, company status (ACTIVE/STRUCK OFF), ROC state | 1,000 |
+| **Income Tax / PAN** | `INCOME_TAX` | PAN (10 chars) | Entity identity match, PAN status (ACTIVE/INOPERATIVE/CANCELLED), ITR status | 1,000 |
+| **Make in India (MII)** | `MII` | Audit Verification ID | Verified domestic local content %, Class-I/II certification, auditor reference | 1,000 |
+| **TOTAL** | | | | **5,000 Records** |
+
+### 3. Architecture & Data Boundary Isolation
+- **Runtime Storage**: Native relational database (`mock_gstn_records`, `mock_udyam_records`, `mock_mca_records`, `mock_income_tax_records`, `mock_mii_records`) in PostgreSQL (with zero-configuration local SQLite fallback for dev/testing).
+- **Source Boundary Rule**: Bidder self-declarations (e.g. ₹8.0 Cr turnover in a PDF proposal) remain in the bidder document layer. Authoritative registry records (e.g. ₹3.65 Cr verified turnover on GSTN) reside exclusively in government source tables. Neither domain mutates the other.
+- **Explicit Mock Labeling**: Every synthetic record permanently carries `is_mock = True` and `source_type = "MOCK GOVERNMENT SOURCE — SIH DEMONSTRATION"` to guarantee it can never be mistaken for live government records.
+- **Deterministic Generation & Idempotent Seeding**: Built on seed `26100`. Fixtures in `backend/mock_data/*.json` provide 5,000 deterministic records. `python -m app.services.mock_seeder` can be executed repeatedly with zero record duplication.
+
+### 4. Deterministic Showcase Bidders & Contradiction Scenarios
+The dataset defines 10 fixed showcase bidders (`BIDDER-01` through `BIDDER-10`) with mapped identities across all 5 source registries, priming future cross-source compliance rules:
+1. **Turnover Contradiction**: `BIDDER-10` declares ₹8.00 Cr in proposal documents, while GSTN mock records verify only ₹3.65 Cr.
+2. **MSE Exemption Verification**: `BIDDER-03` legitimately qualifies for tender fee/EMD exemptions via `ACTIVE` + `MICRO` status on Udyam.
+3. **Local Content Contradiction**: `BIDDER-10` claims 50% domestic content in its cover letter, but Bill of Materials (BOM) analysis and MII mock register confirm only 32% (disqualifying Class-I status).
+4. **Entity Name Variation**: `BIDDER-04` proposal references "Alpha Technologies Pvt Ltd", whereas MCA registry lists "Alpha Technology Private Limited".
+5. **Inactive/Cancelled Registrations**: `BIDDER-08` exhibits `CANCELLED` GSTN status and `INOPERATIVE` PAN status.
+
+### 5. Current Limitations & Roadmap
+- **Implemented in Phase 6.1 + 6.2**: Typed Pydantic schemas, SQLAlchemy ORM models, indexes, 5,000 deterministic synthetic records, idempotent seeder, 10 showcase bidder profiles, comprehensive test suite, and UI preview banner.
+- **Subsequent Phases**:
+  - *Phase 6.3*: Mock Source Providers & Gateway Adapters
+  - *Phase 6.4*: Verification Gateway & Request Routing
+  - *Phase 6.5*: Multi-Source Evidence Fusion
+  - *Phase 6.6*: Cross-Source Contradiction Engine Integration
+  - *Phase 6.7*: Statutory Risk Scoring & Bidder Qualification Ranking
+  - *Phase 6.8*: Procurement Officer Verification UI Dashboard
+

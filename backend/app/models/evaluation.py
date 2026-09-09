@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, Numeric, Integer, ForeignKey
+from sqlalchemy import Column, String, Text, Numeric, Integer, Boolean, ForeignKey, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -17,6 +17,15 @@ class ComplianceEvaluation(Base, BaseModelMixin):
     reasoning = Column(Text, nullable=True)
     evidence_snippet = Column(Text, nullable=True)
     evidence_page_number = Column(Integer, nullable=True)
+    evidence_chunk_id = Column(String(100), nullable=True)
+
+    # Detailed deterministic rule check audit
+    rule_result = Column(JSON, nullable=True)
+
+    # Contradiction flag & explanation
+    contradiction_detected = Column(Boolean, default=False, nullable=False)
+    contradiction_details = Column(Text, nullable=True)
+
     risk_level = Column(String(20), default="MEDIUM", nullable=False)  # LOW, MEDIUM, HIGH, CRITICAL
 
     # Human Override

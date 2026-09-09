@@ -37,5 +37,9 @@ Thumbs.db
 
 # Storage / Uploads
 backend/uploads/
+uploads/
 backend/sample_data/temp/
 *.log
+*.db
+*.sqlite
+*.sqlite3

@@ -25,21 +25,24 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         if result.scalar() == 1:
             db_status = "HEALTHY"
 
-        # Check pgvector extension
-        ext_result = await db.execute(
-            text("SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';")
-        )
-        ext_row = ext_result.first()
-        if ext_row:
-            details["pgvector_extension"] = {
-                "available": True,
-                "version": ext_row[1]
-            }
+        # Check pgvector extension only if PostgreSQL
+        if db.bind.dialect.name == "postgresql":
+            ext_result = await db.execute(
+                text("SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';")
+            )
+            ext_row = ext_result.first()
+            if ext_row:
+                details["pgvector_extension"] = {
+                    "available": True,
+                    "version": ext_row[1]
+                }
+            else:
+                details["pgvector_extension"] = {
+                    "available": False,
+                    "note": "Extension not yet created in public schema"
+                }
         else:
-            details["pgvector_extension"] = {
-                "available": False,
-                "note": "Extension not yet created in public schema"
-            }
+            details["database_mode"] = f"{db.bind.dialect.name.upper()} Local Storage"
 
     except Exception as e:
         logger.error(f"Database health check failed: {e}")

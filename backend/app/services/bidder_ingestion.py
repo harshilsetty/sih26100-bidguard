@@ -1,0 +1,129 @@
+import logging
+from typing import List, Dict, Any, Union, Optional
+from uuid import UUID, uuid4
+from app.services.pdf_extractor import extract_pages_from_pdf
+from app.schemas.bidder import (
+    IngestedDocumentResult,
+    IngestedPageData,
+    DocumentExtractionStatus,
+    BidderDocumentType,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def ingest_bidder_document(
+    pdf_source: Union[bytes, str],
+    bidder_id: UUID,
+    document_id: Optional[UUID] = None,
+    filename: str = "document.pdf",
+    doc_type: Optional[str] = None,
+) -> IngestedDocumentResult:
+    """Ingest a single PDF document for a specific bidder using PyMuPDF.
+
+    Preserves exact page-level text, detects empty or scanned pages, and
+    records extraction status without silently discarding failures.
+    """
+    doc_id = document_id or uuid4()
+
+    try:
+        raw_pages = extract_pages_from_pdf(pdf_source)
+    except Exception as e:
+        logger.error(f"Failed to ingest document '{filename}' for bidder {bidder_id}: {e}")
+        return IngestedDocumentResult(
+            document_id=doc_id,
+            bidder_id=bidder_id,
+            filename=filename,
+            doc_type=doc_type,
+            total_pages=0,
+            empty_pages_count=0,
+            pages=[],
+            extraction_status=DocumentExtractionStatus.FAILED,
+            error_message=str(e),
+        )
+
+    ingested_pages: List[IngestedPageData] = []
+    empty_pages_count = 0
+
+    for p in raw_pages:
+        # A page is empty or scanned if PyMuPDF extracted zero or near-zero text (< 5 words)
+        is_empty = p.get("is_empty", False) or p.get("word_count", 0) < 5
+        if is_empty:
+            empty_pages_count += 1
+
+        ingested_pages.append(
+            IngestedPageData(
+                page_number=p["page_number"],
+                text=p["text"],
+                word_count=p["word_count"],
+                char_count=p["char_count"],
+                is_empty_or_scanned=is_empty,
+            )
+        )
+
+    total_pages = len(ingested_pages)
+
+    if total_pages == 0:
+        status = DocumentExtractionStatus.FAILED
+        error_msg = "PDF contains 0 pages."
+    elif empty_pages_count == total_pages:
+        status = DocumentExtractionStatus.EMPTY_SCANNED
+        error_msg = "All pages in this document appear to be empty or scanned images without an OCR text layer."
+    else:
+        status = DocumentExtractionStatus.EXTRACTED
+        error_msg = None
+
+    logger.info(
+        f"Ingested bidder document '{filename}' ({doc_id}) for bidder {bidder_id}: "
+        f"{total_pages} total pages, {empty_pages_count} empty/scanned, status={status.value}."
+    )
+
+    return IngestedDocumentResult(
+        document_id=doc_id,
+        bidder_id=bidder_id,
+        filename=filename,
+        doc_type=doc_type,
+        total_pages=total_pages,
+        empty_pages_count=empty_pages_count,
+        pages=ingested_pages,
+        extraction_status=status,
+        error_message=error_msg,
+    )
+
+
+def ingest_multiple_bidder_documents(
+    documents: List[Dict[str, Any]],
+    bidder_id: UUID,
+) -> List[IngestedDocumentResult]:
+    """Ingest multiple PDF documents for a single bidder.
+
+    Args:
+        documents: List of dicts, each containing:
+            - "source": bytes or file path string
+            - "filename": str
+            - "doc_type": optional str
+            - "document_id": optional UUID
+        bidder_id: UUID of the bidder owning these documents.
+
+    Returns:
+        List of IngestedDocumentResult objects preserving exact page provenance.
+    """
+    results: List[IngestedDocumentResult] = []
+
+    for doc_item in documents:
+        pdf_source = doc_item.get("source") or doc_item.get("pdf_source")
+        filename = doc_item.get("filename", "unnamed_document.pdf")
+        doc_type = doc_item.get("doc_type")
+        doc_id = doc_item.get("document_id")
+
+        result = ingest_bidder_document(
+            pdf_source=pdf_source,
+            bidder_id=bidder_id,
+            document_id=doc_id,
+            filename=filename,
+            doc_type=doc_type,
+        )
+        results.append(result)
+
+    logger.info(f"Ingested {len(results)} total documents for bidder {bidder_id}.")
+    return results

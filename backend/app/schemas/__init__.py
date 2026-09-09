@@ -11,6 +11,26 @@ from app.schemas.tender import (
     TenderDetailResponse,
     ExtractionResultResponse,
 )
+from app.schemas.bidder import (
+    BidderDocumentType,
+    DocumentExtractionStatus,
+    IngestedPageData,
+    IngestedDocumentResult,
+    DocumentChunkItem,
+    EvidenceRetrievalQuery,
+    RetrievedEvidenceChunk,
+    ClauseEvidenceResponse,
+    BidderCreate,
+    BidderResponse,
+)
+from app.schemas.evaluation import (
+    ComplianceStatus,
+    DeterministicRuleResult,
+    ParameterClaim,
+    AIEvidenceInterpretation,
+    ClauseComplianceEvaluation,
+    BidderComplianceReport,
+)
 
 __all__ = [
     "HealthResponse",
@@ -23,4 +43,19 @@ __all__ = [
     "TenderResponse",
     "TenderDetailResponse",
     "ExtractionResultResponse",
+    "BidderDocumentType",
+    "DocumentExtractionStatus",
+    "IngestedPageData",
+    "IngestedDocumentResult",
+    "DocumentChunkItem",
+    "EvidenceRetrievalQuery",
+    "RetrievedEvidenceChunk",
+    "ClauseEvidenceResponse",
+    "BidderCreate",
+    "BidderResponse",
+    "ComplianceStatus",
+    "DeterministicRuleResult",
+    "AIEvidenceInterpretation",
+    "ClauseComplianceEvaluation",
+    "BidderComplianceReport",
 ]

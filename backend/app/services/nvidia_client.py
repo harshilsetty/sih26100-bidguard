@@ -28,7 +28,8 @@ class NvidiaClient:
             self._client = AsyncOpenAI(
                 base_url=self.base_url,
                 api_key=self.api_key,
-                timeout=90.0
+                timeout=90.0,
+                max_retries=0,
             )
 
     @property
@@ -42,7 +43,8 @@ class NvidiaClient:
             self._client = AsyncOpenAI(
                 base_url=self.base_url,
                 api_key=self.api_key,
-                timeout=90.0
+                timeout=120.0,
+                max_retries=0,
             )
         return self._client
 
@@ -50,17 +52,22 @@ class NvidiaClient:
         self,
         messages: List[Dict[str, str]],
         temperature: float = 1.0,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        timeout: Optional[float] = None,
     ) -> str:
         """Send chat messages to NVIDIA NIM LLM and return the assistant text response."""
         client = self._ensure_client()
-        response = await client.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            stream=False,
-        )
+        call_kwargs: Dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": False,
+        }
+        if timeout is not None:
+            call_kwargs["timeout"] = timeout
+
+        response = await client.chat.completions.create(**call_kwargs)
         msg = response.choices[0].message
         content = (msg.content or "").strip()
         if not content and hasattr(msg, "reasoning_content"):
@@ -72,7 +79,8 @@ class NvidiaClient:
         prompt: str,
         system_prompt: Optional[str] = "You are a precise JSON generator. Output only valid JSON.",
         temperature: float = 1.0,
-        max_tokens: int = 4096
+        max_tokens: int = 4096,
+        timeout: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Request structured JSON completion from NVIDIA NIM LLM."""
         messages = []
@@ -83,34 +91,61 @@ class NvidiaClient:
         raw_text = await self.chat(
             messages=messages,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            timeout=timeout,
         )
 
         clean_text = raw_text.strip()
-        # Strip markdown fences
-        if clean_text.startswith("```json"):
-            clean_text = clean_text[7:]
-        elif clean_text.startswith("```"):
-            clean_text = clean_text[3:]
-        if clean_text.endswith("```"):
-            clean_text = clean_text[:-3]
-        clean_text = clean_text.strip()
 
+        # 1. Search for fenced code blocks ```json ... ``` or ``` ... ``` anywhere in response
+        fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", clean_text, re.IGNORECASE)
+        if fence_match:
+            candidate = fence_match.group(1).strip()
+            try:
+                parsed = json.loads(candidate)
+                if isinstance(parsed, list):
+                    return {"clauses": parsed}
+                return parsed
+            except json.JSONDecodeError:
+                pass
+
+        # 2. Try direct JSON parsing
         try:
-            return json.loads(clean_text)
+            parsed = json.loads(clean_text)
+            if isinstance(parsed, list):
+                return {"clauses": parsed}
+            return parsed
         except json.JSONDecodeError:
-            # Try regex extraction of JSON object or array
-            match = re.search(r"(\{[\s\S]*\}|\[[\s\S]*\])", clean_text)
+            pass
+
+        # 3. Fallback: non-greedy or anchored JSON object / array search
+        for pattern in [r"(\{\s*\"clauses\"[\s\S]*\})", r"(\{[\s\S]*\})", r"(\[[\s\S]*\])"]:
+            match = re.search(pattern, clean_text)
             if match:
                 try:
-                    parsed = json.loads(match.group(0))
+                    parsed = json.loads(match.group(1))
                     if isinstance(parsed, list):
                         return {"clauses": parsed}
                     return parsed
                 except json.JSONDecodeError:
+                    continue
+
+        # 4. Truncation recovery: rescue completed clause objects if response was cut off
+        clause_pattern = r'\{\s*"category"\s*:[\s\S]*?"page_number"\s*:\s*\d+\s*\}'
+        found_clauses = re.findall(clause_pattern, clean_text)
+        if found_clauses:
+            recovered = []
+            for item_str in found_clauses:
+                try:
+                    recovered.append(json.loads(item_str))
+                except Exception:
                     pass
-            logger.warning(f"Failed to parse JSON response: {raw_text[:200]}")
-            return {"raw_response": raw_text}
+            if recovered:
+                logger.info(f"Rescued {len(recovered)} completed clauses from truncated LLM response.")
+                return {"clauses": recovered}
+
+        logger.warning(f"Failed to parse JSON response: {raw_text[:200]}")
+        return {"raw_response": raw_text}
 
     async def health_check(self) -> Dict[str, Any]:
         """Test NVIDIA NIM API connectivity with a lightweight test ping."""

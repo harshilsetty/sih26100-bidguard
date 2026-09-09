@@ -30,14 +30,16 @@ async def main():
     print(f"Total Unique Clauses Extracted: {len(clauses)}")
     print("Updated Sequence Tracker:", updated_seq)
 
-    print("\n=== 4. Verifying Extracted Clauses Details ===")
+    print("\n=== 4. Verifying Extracted Clauses Details ===", flush=True)
     for c in clauses:
-        print(f"[{c['clause_code']}] ({c['category']}) {c['title']}")
-        print(f"  Provenance: Page {c['page_number']}")
-        print(f"  Mandatory: {c['is_mandatory']}")
-        print(f"  Rule Config (Draft): {c['rule_config']}")
-        print(f"  Source Quote: \"{c['source_text']}\"")
-        print("-" * 50)
+        title_safe = c['title'].encode('ascii', 'replace').decode('ascii')
+        src_safe = c['source_text'].encode('ascii', 'replace').decode('ascii')
+        print(f"[{c['clause_code']}] ({c['category']}) {title_safe}", flush=True)
+        print(f"  Provenance: Page {c['page_number']}", flush=True)
+        print(f"  Mandatory: {c['is_mandatory']}", flush=True)
+        print(f"  Rule Config (Draft): {c['rule_config']}", flush=True)
+        print(f"  Source Quote: \"{src_safe}\"", flush=True)
+        print("-" * 50, flush=True)
 
 if __name__ == "__main__":
     asyncio.run(main())
