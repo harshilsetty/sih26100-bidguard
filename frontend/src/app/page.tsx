@@ -109,7 +109,7 @@ export default function HomePage() {
               <Activity className="w-5 h-5 text-blue-400" />
               <span className="font-medium text-sm">FastAPI Backend</span>
             </div>
-            {systemHealth?.status === "HEALTHY" ? (
+            {systemHealth?.status?.toLowerCase() === "healthy" ? (
               <span className="inline-flex items-center text-xs font-medium text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Active
               </span>
@@ -131,7 +131,7 @@ export default function HomePage() {
               <Database className="w-5 h-5 text-indigo-400" />
               <span className="font-medium text-sm">PostgreSQL Database</span>
             </div>
-            {systemHealth?.database === "HEALTHY" ? (
+            {systemHealth?.database?.toLowerCase() === "postgresql" || systemHealth?.database?.toUpperCase() === "HEALTHY" ? (
               <span className="inline-flex items-center text-xs font-medium text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1" /> Connected
               </span>

@@ -129,8 +129,12 @@ The verification foundation models 5 key government registries:
 | **Make in India (MII)** | `MII` | Audit Verification ID | Verified domestic local content %, Class-I/II certification, auditor reference | 1,000 |
 | **TOTAL** | | | | **5,000 Records** |
 
-### 3. Architecture & Data Boundary Isolation
-- **Runtime Storage**: Native relational database (`mock_gstn_records`, `mock_udyam_records`, `mock_mca_records`, `mock_income_tax_records`, `mock_mii_records`) in PostgreSQL (with zero-configuration local SQLite fallback for dev/testing).
+### 3. Architecture & Database Deployment Hardening
+- **Canonical Runtime Database**: **PostgreSQL 16** with the `pgvector` and `uuid-ossp` extensions is the authoritative runtime database across staging, demo, and production environments.
+- **5,000 Mock Records Stored in PostgreSQL**: All 5,000 deterministic synthetic records across GSTN, Udyam, MCA, Income Tax, and MII are seeded and queried directly from PostgreSQL tables (`mock_gstn_records`, `mock_udyam_records`, etc.).
+- **Explicit SQLite Fallback Guard (`ALLOW_SQLITE_FALLBACK=False`)**: Automatic SQLite fallback is strictly **disabled by default** (`ALLOW_SQLITE_FALLBACK: bool = False`). If PostgreSQL is unavailable, the application **fails fast** with a clear `RuntimeError` rather than silently continuing, preventing split-brain or data divergence.
+- **Local Development Exception**: SQLite fallback (`sqlite+aiosqlite:///gem_compliance.db`) is only permitted when `ALLOW_SQLITE_FALLBACK=true` is explicitly configured for offline local testing without PostgreSQL.
+- **Health Diagnostic Endpoint**: The `/api/v1/health` endpoint exposes the active database engine (`"database": "postgresql"`, `"status": "healthy"` or `"database": "sqlite_fallback"`, `"status": "degraded"`).
 - **Source Boundary Rule**: Bidder self-declarations (e.g. ₹8.0 Cr turnover in a PDF proposal) remain in the bidder document layer. Authoritative registry records (e.g. ₹3.65 Cr verified turnover on GSTN) reside exclusively in government source tables. Neither domain mutates the other.
 - **Explicit Mock Labeling**: Every synthetic record permanently carries `is_mock = True` and `source_type = "MOCK GOVERNMENT SOURCE — SIH DEMONSTRATION"` to guarantee it can never be mistaken for live government records.
 - **Deterministic Generation & Idempotent Seeding**: Built on seed `26100`. Fixtures in `backend/mock_data/*.json` provide 5,000 deterministic records. `python -m app.services.mock_seeder` can be executed repeatedly with zero record duplication.

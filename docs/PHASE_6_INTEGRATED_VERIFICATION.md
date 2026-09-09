@@ -229,6 +229,20 @@ Showcase bidders `BIDDER-01` through `BIDDER-10` have predetermined identities m
 
 ---
 
+## 10.1 Database Deployment Hardening & Runtime Integrity
+
+Following architecture verification, the database runtime has been hardened against accidental fallback and data divergence:
+
+- **Canonical Runtime Database**: **PostgreSQL 16** with `pgvector` and `uuid-ossp` extensions is the authoritative, production-grade runtime database.
+- **5,000 Mock Records Stored in PostgreSQL**: All 5,000 mock records (1,000 per source domain) are stored directly in isolated PostgreSQL tables (`mock_gstn_records`, `mock_udyam_records`, `mock_mca_records`, `mock_income_tax_records`, `mock_mii_records`).
+- **Explicit SQLite Fallback Guard (`ALLOW_SQLITE_FALLBACK=False`)**: The application strictly enforces `ALLOW_SQLITE_FALLBACK: bool = False` by default.
+  - When `ALLOW_SQLITE_FALLBACK = false` and PostgreSQL is unreachable, the system **fails fast** with a descriptive `RuntimeError`. Silent continuation or implicit failover is strictly blocked.
+  - Staging, demo, and production environments are guaranteed to use PostgreSQL exclusively.
+- **Controlled Local Development**: Local SQLite fallback (`gem_compliance.db`) is only permitted when `ALLOW_SQLITE_FALLBACK=true` is explicitly configured.
+- **Health Diagnostic Verification**: The `/api/v1/health` endpoint exposes the active database dialect (`"database": "postgresql"`, `"status": "healthy"`) to verify connectivity at runtime.
+
+---
+
 ## 11. UI Preview Implementation
 
 Located in `frontend/src/app/tenders/[id]/bidders/page.tsx`:

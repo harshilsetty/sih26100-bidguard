@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # Database Settings
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/gem_compliance"
     SYNC_DATABASE_URL: str = "postgresql://postgres:postgrespassword@localhost:5432/gem_compliance"
+    ALLOW_SQLITE_FALLBACK: bool = False
 
     # NVIDIA NIM / API Settings
     NVIDIA_API_KEY: str = ""

@@ -15,8 +15,10 @@ router = APIRouter(prefix="/health", tags=["Health & Diagnostics"])
 
 @router.get("", response_model=HealthResponse, summary="API & Database Health Check")
 async def health_check(db: AsyncSession = Depends(get_db)):
-    """Health check for API and PostgreSQL database only (does not require NVIDIA)."""
+    """Health check for API and PostgreSQL database (with engine detection)."""
     db_status = "UNKNOWN"
+    active_database = "unknown"
+    overall_status = "degraded"
     details = {}
 
     try:
@@ -25,8 +27,12 @@ async def health_check(db: AsyncSession = Depends(get_db)):
         if result.scalar() == 1:
             db_status = "HEALTHY"
 
-        # Check pgvector extension only if PostgreSQL
-        if db.bind.dialect.name == "postgresql":
+        dialect_name = db.bind.dialect.name if (hasattr(db, "bind") and db.bind) else "unknown"
+
+        # Check pgvector extension if PostgreSQL
+        if dialect_name == "postgresql":
+            active_database = "postgresql"
+            overall_status = "healthy"
             ext_result = await db.execute(
                 text("SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';")
             )
@@ -42,20 +48,25 @@ async def health_check(db: AsyncSession = Depends(get_db)):
                     "note": "Extension not yet created in public schema"
                 }
         else:
-            details["database_mode"] = f"{db.bind.dialect.name.upper()} Local Storage"
+            active_database = "sqlite_fallback"
+            overall_status = "degraded"
+            details["database_mode"] = f"{dialect_name.upper()} Local Storage"
 
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         db_status = f"ERROR: {str(e)}"
+        active_database = "disconnected"
+        overall_status = "degraded"
         details["db_error"] = str(e)
 
-    overall_status = "HEALTHY" if db_status == "HEALTHY" else "DEGRADED"
+    details["database_engine"] = active_database
+    details["database_status"] = db_status
 
     return HealthResponse(
         status=overall_status,
         service=settings.PROJECT_NAME,
         version=settings.VERSION,
-        database=db_status,
+        database=active_database,
         details=details
     )
 
