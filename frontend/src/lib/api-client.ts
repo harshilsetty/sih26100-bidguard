@@ -12,6 +12,8 @@ import {
   OfficerOverrideRequest,
   EvaluationRunRequest,
   EvaluationRunResponse,
+  BidderComplianceScore,
+  TenderBidderRankingResponse,
 } from "./types";
 
 const API_BASE_URL =
@@ -373,5 +375,34 @@ export async function fetchShowcaseBidders(bidderId?: string): Promise<any> {
 
 export function getMockSourceExportUrl(source: string): string {
   return `${API_BASE_URL}/api/v1/mock-sources/${source}/export/csv`;
+}
+
+export async function fetchBidderScore(
+  tenderId: string,
+  bidderId: string
+): Promise<BidderComplianceScore> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/bidders/${bidderId}/score`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch bidder score: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchTenderRanking(
+  tenderId: string
+): Promise<TenderBidderRankingResponse> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/ranking`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch tender ranking: ${res.status}`);
+  }
+  return res.json();
 }
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   fetchComplianceMatrix,
   triggerComplianceEvaluation,
+  fetchTenderRanking,
 } from "@/lib/api-client";
 import {
   ComplianceMatrixResponse,
@@ -12,6 +13,8 @@ import {
   BidderSummary,
   EvaluationCellSummary,
   EvaluationDetailResponse,
+  TenderBidderRankingResponse,
+  RankedBidderItem,
 } from "@/lib/types";
 import EvidenceDrawer from "@/components/EvidenceDrawer";
 import {
@@ -157,6 +160,27 @@ export default function ComplianceMatrixPage({
   const [filterCategory, setFilterCategory] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Bidder Ranking State (Phase 6.4)
+  const [rankingData, setRankingData] = useState<TenderBidderRankingResponse | null>(null);
+  const [rankingLoading, setRankingLoading] = useState<boolean>(false);
+  const [rankingError, setRankingError] = useState<string | null>(null);
+  const [shortlistFilter, setShortlistFilter] = useState<"TOP_3" | "TOP_5" | "ALL">("ALL");
+
+  const loadRanking = async () => {
+    setRankingLoading(true);
+    setRankingError(null);
+    try {
+      const data = await fetchTenderRanking(tenderId);
+      if (data && data.rankings) {
+        setRankingData(data);
+      }
+    } catch (err: any) {
+      setRankingError(err.message || "Failed to load bidder ranking");
+    } finally {
+      setRankingLoading(false);
+    }
+  };
+
   // Evidence Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState<EvaluationCellSummary | null>(null);
@@ -175,6 +199,7 @@ export default function ComplianceMatrixPage({
       }
     };
     loadMatrix();
+    loadRanking();
   }, [tenderId]);
 
   const handleReRunEvaluation = async () => {
@@ -185,6 +210,7 @@ export default function ComplianceMatrixPage({
       if (updated && updated.clauses && updated.clauses.length > 0) {
         setMatrixData(updated);
       }
+      await loadRanking();
     } catch {
       // Local refresh animation in prototype mode
       setTimeout(() => {
@@ -334,6 +360,166 @@ export default function ComplianceMatrixPage({
             <div className="text-lg font-bold text-amber-900">4 REVIEW</div>
           </div>
         </div>
+      </div>
+
+      {/* PHASE 6.4: BIDDER COMPLIANCE SCORE & RANKING (DECISION SUPPORT) */}
+      <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center space-x-2">
+              <h2 className="text-base font-bold text-slate-900 tracking-tight">
+                Bidder Compliance Ranking & Safety Risk Assessment
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                Decision Support
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Deterministic 100-point evaluation across tender compliance (50), statutory consistency (20), evidence completeness (15), and contradictions (15).
+            </p>
+          </div>
+
+          {/* Shortlist View Filters */}
+          <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-md border border-slate-200 text-xs">
+            {(["TOP_3", "TOP_5", "ALL"] as const).map((filterKey) => (
+              <button
+                key={filterKey}
+                onClick={() => setShortlistFilter(filterKey)}
+                className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                  shortlistFilter === filterKey
+                    ? "bg-white text-blue-900 shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {filterKey === "TOP_3" ? "Top 3 View" : filterKey === "TOP_5" ? "Top 5 View" : "All Bidders"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Prominent Mandatory Officer Notice */}
+        <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-md flex items-start space-x-2.5 text-xs text-amber-900">
+          <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold">AI-Assisted Procurement Decision Support:</span> Ranking reflects deterministic compliance verification scores to prioritize officer review. Final qualification, shortlisting, and award selection remain with the Procurement Officer.
+          </div>
+        </div>
+
+        {/* Ranking List or Loading/Error */}
+        {rankingLoading ? (
+          <div className="py-8 text-center text-xs text-slate-500 flex items-center justify-center space-x-2">
+            <RotateCw className="w-4 h-4 animate-spin text-blue-900" />
+            <span>Calculating deterministic scores and rankings...</span>
+          </div>
+        ) : rankingError ? (
+          <div className="py-4 text-center text-xs text-rose-600 bg-rose-50 rounded-md border border-rose-200">
+            {rankingError}
+          </div>
+        ) : !rankingData || rankingData.rankings.length === 0 ? (
+          <div className="py-6 text-center text-xs text-slate-500">
+            No bidder ranking data available for this tender. Run verification above to calculate scores.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {rankingData.rankings
+              .slice(0, shortlistFilter === "TOP_3" ? 3 : shortlistFilter === "TOP_5" ? 5 : undefined)
+              .map((item) => {
+                const riskBg =
+                  item.risk_level === "LOW"
+                    ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                    : item.risk_level === "MEDIUM"
+                    ? "bg-amber-50 text-amber-800 border-amber-300"
+                    : "bg-rose-50 text-rose-800 border-rose-300";
+
+                return (
+                  <div
+                    key={item.bidder_id}
+                    className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 hover:bg-slate-50 transition space-y-3"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-900 text-white font-bold text-xs">
+                          #{item.rank}
+                        </span>
+                        <div>
+                          <div className="font-bold text-slate-900 text-xs truncate max-w-[180px]" title={item.company_name}>
+                            {item.company_name}
+                          </div>
+                          <div className="text-[10px] text-slate-500 font-mono">
+                            ID: {item.bidder_id.slice(0, 8)}...
+                          </div>
+                        </div>
+                      </div>
+
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${riskBg}`}>
+                        {item.risk_level} RISK
+                      </span>
+                    </div>
+
+                    {/* Overall Score */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs font-bold">
+                        <span className="text-slate-600">Overall Compliance</span>
+                        <span className="text-blue-900 text-sm font-extrabold">{item.overall_score.toFixed(1)} / 100</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${
+                            item.overall_score >= 80
+                              ? "bg-emerald-600"
+                              : item.overall_score >= 60
+                              ? "bg-amber-500"
+                              : "bg-rose-600"
+                          }`}
+                          style={{ width: `${item.overall_score}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* 4-Part Component Breakdown */}
+                    <div className="grid grid-cols-2 gap-1.5 text-[11px] pt-1 border-t border-slate-200/60">
+                      <div className="bg-white p-1.5 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Tender (50)</div>
+                        <div className="font-bold text-slate-800">{item.breakdown.tender_compliance.toFixed(1)}</div>
+                      </div>
+                      <div className="bg-white p-1.5 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Statutory (20)</div>
+                        <div className="font-bold text-slate-800">{item.breakdown.statutory_consistency.toFixed(1)}</div>
+                      </div>
+                      <div className="bg-white p-1.5 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Completeness (15)</div>
+                        <div className="font-bold text-slate-800">{item.breakdown.evidence_completeness.toFixed(1)}</div>
+                      </div>
+                      <div className="bg-white p-1.5 rounded border border-slate-200">
+                        <div className="text-slate-500 text-[10px]">Contradictions (15)</div>
+                        <div className="font-bold text-slate-800">{item.breakdown.contradiction_score.toFixed(1)}</div>
+                      </div>
+                    </div>
+
+                    {/* Recommendation Badge */}
+                    <div className="text-[11px] text-slate-600 italic bg-white p-2 rounded border border-slate-200">
+                      Advisory: <span className="font-semibold text-slate-800">{item.recommendation}</span>
+                    </div>
+
+                    {/* Key Warnings if any */}
+                    {item.key_warnings && item.key_warnings.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+                          Key Alerts ({item.warning_count})
+                        </div>
+                        {item.key_warnings.map((w, wIdx) => (
+                          <div key={wIdx} className="text-[10px] text-slate-700 truncate flex items-center space-x-1">
+                            <span className="text-amber-600 font-bold">!</span>
+                            <span className="truncate">{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
 
       {/* SCREEN 2: Filter Bar */}

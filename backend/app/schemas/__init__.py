@@ -44,6 +44,16 @@ from app.schemas.cross_source_verification import (
     CrossSourceVerificationResult,
     BidderCrossSourceVerificationReport,
 )
+from app.schemas.scoring import (
+    RiskLevel,
+    ContradictionSeverity,
+    ScoreBreakdown,
+    ScoreSummary,
+    BidderComplianceScoreResponse,
+    RankedBidderItem,
+    TenderBidderRankingResponse,
+    DECISION_SUPPORT_DISCLAIMER,
+)
 
 __all__ = [
     "HealthResponse",
@@ -80,4 +90,12 @@ __all__ = [
     "DiscrepancyDetail",
     "CrossSourceVerificationResult",
     "BidderCrossSourceVerificationReport",
+    "RiskLevel",
+    "ContradictionSeverity",
+    "ScoreBreakdown",
+    "ScoreSummary",
+    "BidderComplianceScoreResponse",
+    "RankedBidderItem",
+    "TenderBidderRankingResponse",
+    "DECISION_SUPPORT_DISCLAIMER",
 ]

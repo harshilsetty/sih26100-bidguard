@@ -26,6 +26,13 @@ from app.schemas.evaluation import (
     EvaluationRunRequest,
     EvaluationRunResponse,
 )
+from app.schemas.scoring import (
+    BidderComplianceScoreResponse,
+    TenderBidderRankingResponse,
+)
+from app.services.evidence_fusion_service import EvidenceFusionService
+from app.services.cross_source_verifier import CrossSourceVerifier
+from app.services.scoring_service import ScoringAndRankingService
 from app.services.embedding_service import get_embedding_service
 from app.services.evidence_retrieval import retrieve_evidence_for_tender_clauses
 from app.services.compliance_engine import evaluate_bidder_compliance
@@ -507,4 +514,134 @@ async def override_evaluation_decision(
         tender_id=eval_rec.clause.tender_id,
         bidder_name=eval_rec.bidder.company_name,
         clause=eval_rec.clause,
+    )
+
+
+async def _compute_bidder_score(
+    bidder: Bidder,
+    tender_id: UUID,
+    db: AsyncSession,
+) -> BidderComplianceScoreResponse:
+    # 1. Load clauses for tender to map mandatory flags
+    c_stmt = select(TenderClause).where(TenderClause.tender_id == tender_id)
+    clauses = (await db.execute(c_stmt)).scalars().all()
+    clause_map = {c.clause_code: c.is_mandatory for c in clauses}
+
+    # 2. Load compliance evaluations for this bidder
+    eval_stmt = (
+        select(ComplianceEvaluation)
+        .where(ComplianceEvaluation.bidder_id == bidder.id)
+        .options(selectinload(ComplianceEvaluation.clause))
+    )
+    eval_records = (await db.execute(eval_stmt)).scalars().all()
+    evals_for_tender = [e for e in eval_records if e.clause and e.clause.tender_id == tender_id]
+
+    # 3. Fuse evidence and verify cross-source
+    profile = await EvidenceFusionService.fuse_bidder_evidence(
+        bidder_id=bidder.id,
+        db=db,
+        tender_id=tender_id,
+        company_name_override=bidder.company_name,
+    )
+    cross_report = CrossSourceVerifier.verify_profile(profile)
+
+    # 4. Calculate score
+    return ScoringAndRankingService.calculate_bidder_score(
+        bidder_id=bidder.id,
+        company_name=bidder.company_name,
+        evaluations=evals_for_tender,
+        cross_source_report=cross_report,
+        tender_id=tender_id,
+        clause_mandatory_map=clause_map,
+    )
+
+
+@router.get(
+    "/tenders/{tender_id}/bidders/{bidder_id}/score",
+    response_model=BidderComplianceScoreResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_bidder_compliance_score(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve 100-point compliance score, risk assessment, and component breakdown for a bidder."""
+    await _get_tender_or_404(tender_id, db)
+
+    b_stmt = select(Bidder).where(
+        Bidder.id == bidder_id,
+        Bidder.tender_id == tender_id,
+    )
+    bidder = (await db.execute(b_stmt)).scalar_one_or_none()
+    if not bidder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bidder with ID {bidder_id} not found for tender {tender_id}",
+        )
+
+    return await _compute_bidder_score(bidder, tender_id, db)
+
+
+@router.get(
+    "/tenders/{tender_id}/evaluations/{evaluation_id}/score",
+    response_model=BidderComplianceScoreResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_evaluation_bidder_compliance_score(
+    tender_id: UUID,
+    evaluation_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve compliance score for the bidder associated with a specific evaluation cell."""
+    await _get_tender_or_404(tender_id, db)
+
+    eval_stmt = (
+        select(ComplianceEvaluation)
+        .where(ComplianceEvaluation.id == evaluation_id)
+        .options(
+            selectinload(ComplianceEvaluation.clause),
+            selectinload(ComplianceEvaluation.bidder),
+        )
+    )
+    eval_rec = (await db.execute(eval_stmt)).scalar_one_or_none()
+    if not eval_rec:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Compliance evaluation {evaluation_id} not found",
+        )
+
+    if eval_rec.clause.tender_id != tender_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Evaluation {evaluation_id} does not belong to tender {tender_id}",
+        )
+
+    return await _compute_bidder_score(eval_rec.bidder, tender_id, db)
+
+
+@router.get(
+    "/tenders/{tender_id}/ranking",
+    response_model=TenderBidderRankingResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_tender_bidder_ranking(
+    tender_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve deterministic, comparative bidder ranking and safety risk assessment under a tender."""
+    tender = await _get_tender_or_404(tender_id, db)
+
+    b_stmt = select(Bidder).where(Bidder.tender_id == tender_id).order_by(Bidder.created_at)
+    bidders = (await db.execute(b_stmt)).scalars().all()
+
+    bidder_scores = []
+    for bidder in bidders:
+        score_item = await _compute_bidder_score(bidder, tender_id, db)
+        bidder_scores.append(score_item)
+
+    return ScoringAndRankingService.rank_bidders(
+        tender_id=tender.id,
+        tender_title=tender.title,
+        bidder_scores=bidder_scores,
     )

@@ -220,3 +220,56 @@ export interface DemoBiddersLoadResponse {
   bidders: Bidder[];
 }
 
+export type RiskLevel = "LOW" | "MEDIUM" | "HIGH";
+
+export interface ScoreBreakdown {
+  tender_compliance: number;
+  statutory_consistency: number;
+  evidence_completeness: number;
+  contradiction_score: number;
+}
+
+export interface ScoreSummary {
+  pass_count: number;
+  fail_count: number;
+  review_count: number;
+  inconsistency_count: number;
+  major_contradiction_count: number;
+  minor_contradiction_count: number;
+}
+
+export interface BidderComplianceScore {
+  bidder_id: string;
+  tender_id?: string;
+  company_name: string;
+  overall_score: number;
+  risk_level: RiskLevel;
+  breakdown: ScoreBreakdown;
+  risk_triggers: string[];
+  summary: ScoreSummary;
+  calculation_details?: Record<string, any>;
+  disclaimer: string;
+  created_at?: string;
+}
+
+export interface RankedBidderItem {
+  rank: number;
+  bidder_id: string;
+  company_name: string;
+  overall_score: number;
+  risk_level: RiskLevel;
+  breakdown: ScoreBreakdown;
+  recommendation: string;
+  warning_count: number;
+  key_warnings: string[];
+}
+
+export interface TenderBidderRankingResponse {
+  tender_id: string;
+  tender_title: string;
+  total_bidders: number;
+  rankings: RankedBidderItem[];
+  disclaimer: string;
+  generated_at: string;
+}
+
