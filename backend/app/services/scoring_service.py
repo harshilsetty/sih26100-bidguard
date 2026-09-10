@@ -178,6 +178,8 @@ class ScoringAndRankingService:
         cross_source_report: Optional[BidderCrossSourceVerificationReport] = None,
         tender_id: Optional[Union[UUID, str]] = None,
         clause_mandatory_map: Optional[Dict[str, bool]] = None,
+        is_debarred_on_date: bool = False,
+        debarment_details: Optional[Dict[str, Any]] = None,
     ) -> BidderComplianceScoreResponse:
         """Calculate the deterministic 100-point compliance score and risk determination for a bidder."""
         b_id_str = str(bidder_id)
@@ -334,6 +336,15 @@ class ScoringAndRankingService:
                 f"Mandatory tender criteria failed ({fails_str}): risk elevated to HIGH."
             )
 
+        # Safety override 4: Active statutory debarment signal -> HIGH
+        # Orthogonal risk signal: does NOT alter 100-pt mathematical formula.
+        # HIGH RISK != FAIL != DISQUALIFIED.
+        if is_debarred_on_date:
+            assigned_risk = RiskLevel.HIGH
+            risk_triggers.append(
+                "Active statutory debarment / blacklisting verified on evaluation date: risk elevated to HIGH (officer review required)."
+            )
+
         calculation_details = {
             "tender_compliance": {
                 "earned_points": earned_clause_points,
@@ -364,6 +375,13 @@ class ScoringAndRankingService:
             },
             "contradiction_details": contradiction_notes,
         }
+
+        if is_debarred_on_date:
+            calculation_details["debarment_risk"] = {
+                "is_debarred_on_date": True,
+                "officer_review_required": True,
+                "details": debarment_details or {},
+            }
 
         return BidderComplianceScoreResponse(
             bidder_id=b_id_str,

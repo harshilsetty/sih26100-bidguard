@@ -115,6 +115,18 @@ export default function StatutoryVerificationPanel({
             DISCREPANCY
           </span>
         );
+      case "EXPIRED":
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+            EXPIRED
+          </span>
+        );
+      case "UNVERIFIED":
+        return (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+            UNVERIFIED
+          </span>
+        );
       default:
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
@@ -136,6 +148,8 @@ export default function StatutoryVerificationPanel({
         return <FileCheck className="w-4 h-4 text-orange-600" />;
       case "MII":
         return <CheckCircle2 className="w-4 h-4 text-indigo-600" />;
+      case "DEBARMENT":
+        return <AlertTriangle className="w-4 h-4 text-rose-600" />;
       default:
         return <Landmark className="w-4 h-4 text-slate-600" />;
     }
@@ -252,6 +266,100 @@ export default function StatutoryVerificationPanel({
           </div>
         );
 
+      case "DEBARMENT":
+        if (p.is_debarred_on_date) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-2 rounded bg-rose-50 border border-rose-200 text-rose-900 space-y-1">
+                <div className="flex items-center text-[10px] font-bold text-rose-700 tracking-wide uppercase">
+                  <AlertTriangle className="w-3 h-3 mr-1 text-rose-600 shrink-0" />
+                  <span>HIGH RISK — OFFICER REVIEW REQUIRED</span>
+                </div>
+                <p className="text-[10px] text-rose-800 leading-tight font-medium">
+                  Debarment active on bid date. Automatic disqualification disabled.
+                </p>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Order No:</span>
+                <span className="font-mono font-bold text-slate-800 truncate max-w-[110px]">{p.order_number || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Authority:</span>
+                <span className="text-slate-700 truncate max-w-[110px]">{p.authority_name || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Period:</span>
+                <span className="text-slate-700 font-mono text-[10px]">
+                  {p.start_date || "?"} → {p.end_date || "INDEFINITE"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Status:</span>
+                <span className="font-bold text-rose-700">{p.temporal_status || "ACTIVE_ON_DATE"}</span>
+              </div>
+            </div>
+          );
+        } else if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-2 rounded bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
+                <div className="flex items-center text-[10px] font-bold text-amber-800 uppercase">
+                  <AlertTriangle className="w-3 h-3 mr-1 text-amber-600 shrink-0" />
+                  <span>AMBIGUOUS NAME MATCH</span>
+                </div>
+                <p className="text-[10px] text-amber-800 leading-tight">
+                  Officer review required. Debarment NOT confirmed.
+                </p>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate:</span>
+                <span className="text-slate-800 font-medium truncate max-w-[110px]">{p.candidate_firm_name || "N/A"}</span>
+              </div>
+            </div>
+          );
+        } else if (p.temporal_status === "EXPIRED_BEFORE_DATE") {
+          return (
+            <div className="space-y-1 text-[11px] text-slate-600">
+              <div className="p-1.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-medium">
+                Debarment concluded prior to evaluation date
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Concluded:</span>
+                <span className="font-mono text-slate-700">{p.end_date || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Past Order:</span>
+                <span className="font-mono text-slate-700 truncate max-w-[110px]">{p.order_number || "N/A"}</span>
+              </div>
+            </div>
+          );
+        } else if (p.temporal_status === "STARTS_AFTER_DATE") {
+          return (
+            <div className="space-y-1 text-[11px] text-slate-600">
+              <div className="p-1.5 rounded bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-medium">
+                Future order (not effective on evaluation date)
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Commences:</span>
+                <span className="font-mono text-slate-700">{p.start_date || "N/A"}</span>
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div className="space-y-1 text-[11px] text-slate-600">
+              <div className="p-1.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-semibold flex items-center">
+                <CheckCircle2 className="w-3 h-3 mr-1 text-emerald-600" />
+                No Active Debarment Record
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Registry Status:</span>
+                <span className="font-medium text-emerald-700">CLEAR</span>
+              </div>
+            </div>
+          );
+        }
+
       default:
         return (
           <div className="text-[10px] text-slate-500 truncate">
@@ -274,7 +382,7 @@ export default function StatutoryVerificationPanel({
               Statutory Verification Orchestrator
             </h3>
             <p className="text-xs text-slate-500">
-              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII)
+              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII, Debarment)
             </p>
           </div>
         </div>
@@ -343,7 +451,7 @@ export default function StatutoryVerificationPanel({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
             {summary.results.map((r) => (
               <div
                 key={r.verification_id}
@@ -378,13 +486,14 @@ export default function StatutoryVerificationPanel({
         </div>
       ) : (
         /* Static / Baseline Preview before trigger */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
           {[
             { name: "GSTN", label: "Goods & Services Tax", key: "GSTIN", desc: "Turnover, filing status & active registration" },
             { name: "Udyam / MSME", label: "Ministry of MSME", key: "Udyam No.", desc: "Enterprise scale (Micro/Small/Medium)" },
             { name: "MCA", label: "Corporate Affairs", key: "CIN", desc: "Active company status & authorized capital" },
             { name: "Income Tax", label: "CBDT PAN Register", key: "PAN", desc: "PAN validity & tax filing compliance" },
             { name: "Make in India", label: "DPIIT Local Content", key: "Audit Ref", desc: "Statutory verified domestic content %" },
+            { name: "Debarment", label: "Central Blacklist", key: "PAN / CIN", desc: "Time-aware debarment & sanction orders" },
           ].map((item, idx) => (
             <div key={idx} className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
               <div className="flex items-center justify-between">

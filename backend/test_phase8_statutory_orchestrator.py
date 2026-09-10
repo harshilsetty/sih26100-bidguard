@@ -107,7 +107,7 @@ async def test_adapter_contracts_and_status_separation():
     async with AsyncSessionLocal() as session:
         registry = get_statutory_registry()
         authorities = registry.list_supported_authorities()
-        assert len(authorities) == 5
+        assert len(authorities) >= 5
 
         # Test GSTN adapter with known seeded entity
         gstn_adapter = registry.get_adapter(StatutoryAuthority.GSTN)

@@ -17,6 +17,7 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.database import AsyncSessionLocal
 from app.schemas.statutory_verification import (
     StatutoryAuthority,
     SourceMode,
@@ -44,6 +45,7 @@ AUTHORITY_IDENTIFIER_KEYS: Dict[StatutoryAuthority, List[str]] = {
     StatutoryAuthority.MCA: ["cin", "corporate_id", "entity_identifier", "company_name"],
     StatutoryAuthority.INCOME_TAX: ["pan", "entity_identifier", "company_name"],
     StatutoryAuthority.MII: ["certificate_reference", "mii_cert", "entity_identifier", "product_category", "company_name"],
+    StatutoryAuthority.DEBARMENT: ["pan", "cin", "gstin", "gstn", "udyam_number", "udyam", "entity_identifier", "company_name", "firm_name"],
 }
 
 
@@ -92,6 +94,7 @@ class StatutoryVerificationOrchestrator:
         mode: SourceMode = SourceMode.MOCK,
         db: Optional[AsyncSession] = None,
         timeout_seconds: float = 10.0,
+        **kwargs: Any,
     ) -> SourceVerificationResult:
         """
         Executes a single adapter with strict timeout and exception isolation.
@@ -108,6 +111,7 @@ class StatutoryVerificationOrchestrator:
                     as_of_date=as_of_date,
                     mode=mode,
                     db=db,
+                    **kwargs,
                 ),
                 timeout=timeout_seconds,
             )
@@ -211,6 +215,31 @@ class StatutoryVerificationOrchestrator:
         # Select authorities to query
         authorities_to_run = query.authorities or self.registry.list_supported_authorities()
 
+        async def _run_adapter(adp: BaseSourceAdapter, q_id: str, id_type: str) -> SourceVerificationResult:
+            if db is not None:
+                async with AsyncSessionLocal() as task_session:
+                    return await self.execute_adapter(
+                        adapter=adp,
+                        query_identifier=q_id,
+                        identifier_type=id_type,
+                        as_of_date=query.as_of_date,
+                        mode=query.mode,
+                        db=task_session,
+                        timeout_seconds=timeout_seconds,
+                        **query.identifiers,
+                    )
+            else:
+                return await self.execute_adapter(
+                    adapter=adp,
+                    query_identifier=q_id,
+                    identifier_type=id_type,
+                    as_of_date=query.as_of_date,
+                    mode=query.mode,
+                    db=None,
+                    timeout_seconds=timeout_seconds,
+                    **query.identifiers,
+                )
+
         tasks = []
         for auth in authorities_to_run:
             adapter = self.registry.get_adapter(auth)
@@ -224,17 +253,7 @@ class StatutoryVerificationOrchestrator:
                 fallback_name=fallback_name,
             )
 
-            tasks.append(
-                self.execute_adapter(
-                    adapter=adapter,
-                    query_identifier=q_id,
-                    identifier_type=id_type,
-                    as_of_date=query.as_of_date,
-                    mode=query.mode,
-                    db=db,
-                    timeout_seconds=timeout_seconds,
-                )
-            )
+            tasks.append(_run_adapter(adapter, q_id, id_type))
 
         # Run concurrently with gather
         results: List[SourceVerificationResult] = []

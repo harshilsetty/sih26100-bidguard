@@ -166,3 +166,40 @@ class MockMIIRecord(Base, BaseModelMixin):
     __table_args__ = (
         Index("ix_mock_mii_entity_content", "entity_identifier", "verified_local_content"),
     )
+
+
+class MockDebarmentRecord(Base, BaseModelMixin):
+    """Synthetic Debarment / Blacklisting records."""
+    __tablename__ = "mock_debarment_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="DEBARMENT", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)
+
+    # Identifier fields
+    pan = Column(String(10), nullable=True, index=True)
+    cin = Column(String(21), nullable=True, index=True)
+    gstin = Column(String(15), nullable=True, index=True)
+    udyam_registration_number = Column(String(50), nullable=True, index=True)
+
+    # Debarment specific fields
+    firm_name = Column(String(255), nullable=False, index=True)
+    order_number = Column(String(100), nullable=False)
+    authority_name = Column(String(255), nullable=False)
+    reason = Column(Text, nullable=False)
+    start_date = Column(String(20), nullable=True, index=True)
+    end_date = Column(String(20), nullable=True, index=True)
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_debarment_pan", "pan"),
+        Index("ix_mock_debarment_cin", "cin"),
+        Index("ix_mock_debarment_dates", "start_date", "end_date"),
+    )

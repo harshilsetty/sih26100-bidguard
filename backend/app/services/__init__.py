@@ -11,6 +11,10 @@ from app.services.ocr_engine import (
     get_ocr_engine,
     set_ocr_engine,
 )
+from app.services.debarment_temporal_service import (
+    DebarmentTemporalService,
+    DebarmentTemporalEvaluation,
+)
 from app.services.statutory_adapters import (
     BaseSourceAdapter,
     sanitize_payload,
@@ -19,6 +23,7 @@ from app.services.statutory_adapters import (
     MCASourceAdapter,
     IncomeTaxSourceAdapter,
     MIISourceAdapter,
+    DebarmentSourceAdapter,
     StatutoryAdapterRegistry,
     get_statutory_registry,
 )
@@ -47,6 +52,9 @@ __all__ = [
     "MCASourceAdapter",
     "IncomeTaxSourceAdapter",
     "MIISourceAdapter",
+    "DebarmentSourceAdapter",
+    "DebarmentTemporalService",
+    "DebarmentTemporalEvaluation",
     "StatutoryAdapterRegistry",
     "get_statutory_registry",
     "StatutoryVerificationOrchestrator",

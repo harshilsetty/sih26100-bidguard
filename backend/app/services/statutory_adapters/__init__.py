@@ -10,6 +10,7 @@ from app.services.statutory_adapters.udyam_adapter import UdyamSourceAdapter
 from app.services.statutory_adapters.mca_adapter import MCASourceAdapter
 from app.services.statutory_adapters.income_tax_adapter import IncomeTaxSourceAdapter
 from app.services.statutory_adapters.mii_adapter import MIISourceAdapter
+from app.services.statutory_adapters.debarment_adapter import DebarmentSourceAdapter
 from app.services.statutory_adapters.registry import (
     StatutoryAdapterRegistry,
     get_statutory_registry,
@@ -23,6 +24,7 @@ __all__ = [
     "MCASourceAdapter",
     "IncomeTaxSourceAdapter",
     "MIISourceAdapter",
+    "DebarmentSourceAdapter",
     "StatutoryAdapterRegistry",
     "get_statutory_registry",
 ]

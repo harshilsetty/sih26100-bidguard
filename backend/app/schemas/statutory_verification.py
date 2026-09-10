@@ -15,12 +15,22 @@ STATUTORY_MOCK_BANNER = "MOCK GOVERNMENT SOURCE — SIH DEMONSTRATION"
 
 
 class StatutoryAuthority(str, Enum):
-    """Statutory authorities currently supported in Phase 8.1."""
+    """Statutory authorities supported in BidGuard."""
     GSTN = "GSTN"
     UDYAM = "UDYAM"
     MCA = "MCA"
     INCOME_TAX = "INCOME_TAX"
     MII = "MII"
+    DEBARMENT = "DEBARMENT"
+
+
+class DebarmentTemporalStatus(str, Enum):
+    """Temporal classification of debarment applicability on a specific as_of_date."""
+    ACTIVE_ON_DATE = "ACTIVE_ON_DATE"
+    EXPIRED_BEFORE_DATE = "EXPIRED_BEFORE_DATE"
+    STARTS_AFTER_DATE = "STARTS_AFTER_DATE"
+    UNKNOWN_PERIOD = "UNKNOWN_PERIOD"
+
 
 
 class SourceMode(str, Enum):

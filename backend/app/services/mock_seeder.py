@@ -30,6 +30,7 @@ from app.models.mock_sources import (
     MockMCARecord,
     MockIncomeTaxRecord,
     MockMIIRecord,
+    MockDebarmentRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,6 +60,11 @@ SOURCE_CONFIGS = [
         "name": "MII",
         "file": "mii.json",
         "model": MockMIIRecord,
+    },
+    {
+        "name": "DEBARMENT",
+        "file": "debarment.json",
+        "model": MockDebarmentRecord,
     },
 ]
 

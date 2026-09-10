@@ -66,6 +66,7 @@ from app.schemas.recommendation import (
 )
 from app.schemas.statutory_verification import (
     StatutoryAuthority,
+    DebarmentTemporalStatus,
     SourceMode,
     SourceConnectionStatus,
     SourceVerificationStatus,
@@ -127,6 +128,7 @@ __all__ = [
     "AuditRecordItem",
     "AuditTrailResponse",
     "StatutoryAuthority",
+    "DebarmentTemporalStatus",
     "SourceMode",
     "SourceConnectionStatus",
     "SourceVerificationStatus",

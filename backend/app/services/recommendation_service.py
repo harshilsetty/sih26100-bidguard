@@ -218,6 +218,7 @@ class RecommendationService:
             "statutory_verifications": statutory_facts,
             "valid_clause_codes": list(valid_clause_codes),
             "valid_verification_ids": list(valid_verification_ids),
+            "debarment_risk": (bidder_score.calculation_details or {}).get("debarment_risk"),
         }
 
     @staticmethod
@@ -342,6 +343,12 @@ class RecommendationService:
 
         if len(missing_ev) > 0:
             priority_actions.append(f"Request clarifying evidence for {len(missing_ev)} incomplete items.")
+
+        deb_risk = context.get("debarment_risk")
+        if deb_risk and deb_risk.get("is_debarred_on_date"):
+            risk_findings.append("Active statutory debarment / blacklisting verified on evaluation date: Procurement Officer review required.")
+            key_reasons.append("Debarment record identified in central registry: Officer adjudication required prior to qualification.")
+            priority_actions.append("Review debarment order details and assess applicability under tender terms.")
 
         if not key_reasons:
             key_reasons.append(f"Overall compliance score is {score:.1f}/100 with {risk} risk assessment.")
