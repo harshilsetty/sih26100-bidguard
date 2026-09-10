@@ -31,6 +31,19 @@ from app.schemas.evaluation import (
     ClauseComplianceEvaluation,
     BidderComplianceReport,
 )
+from app.schemas.evidence_fusion import (
+    SourceType,
+    EvidenceType,
+    EvidenceItem,
+    FieldEvidenceGroup,
+    BidderEvidenceFusionProfile,
+)
+from app.schemas.cross_source_verification import (
+    CrossSourceStatus,
+    DiscrepancyDetail,
+    CrossSourceVerificationResult,
+    BidderCrossSourceVerificationReport,
+)
 
 __all__ = [
     "HealthResponse",
@@ -58,4 +71,13 @@ __all__ = [
     "AIEvidenceInterpretation",
     "ClauseComplianceEvaluation",
     "BidderComplianceReport",
+    "SourceType",
+    "EvidenceType",
+    "EvidenceItem",
+    "FieldEvidenceGroup",
+    "BidderEvidenceFusionProfile",
+    "CrossSourceStatus",
+    "DiscrepancyDetail",
+    "CrossSourceVerificationResult",
+    "BidderCrossSourceVerificationReport",
 ]

@@ -21,6 +21,10 @@ from app.schemas.bidder import (
     BidderDocumentResponse,
     DemoBiddersLoadResponse,
 )
+from app.schemas.evidence_fusion import BidderEvidenceFusionProfile
+from app.schemas.cross_source_verification import BidderCrossSourceVerificationReport
+from app.services.evidence_fusion_service import EvidenceFusionService
+from app.services.cross_source_verifier import CrossSourceVerifier
 from app.services.bidder_ingestion import ingest_bidder_document
 from app.services.chunking_service import chunk_ingested_document
 from app.services.embedding_service import get_embedding_service
@@ -379,6 +383,73 @@ async def get_bidder_detail(
         )
 
     return await _build_bidder_detail(bidder, db)
+
+
+@router.get(
+    "/tenders/{tender_id}/bidders/{bidder_id}/evidence-fusion",
+    response_model=BidderEvidenceFusionProfile,
+    status_code=status.HTTP_200_OK,
+)
+async def get_bidder_evidence_fusion(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve normalized, multi-source evidence fusion profile for a bidder."""
+    await _get_tender_or_404(tender_id, db)
+
+    stmt = select(Bidder).where(
+        Bidder.id == bidder_id,
+        Bidder.tender_id == tender_id,
+    )
+    bidder = (await db.execute(stmt)).scalar_one_or_none()
+    if not bidder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bidder with ID {bidder_id} not found for tender {tender_id}",
+        )
+
+    profile = await EvidenceFusionService.fuse_bidder_evidence(
+        bidder_id=bidder_id,
+        db=db,
+        tender_id=tender_id,
+        company_name_override=bidder.company_name,
+    )
+    return profile
+
+
+@router.get(
+    "/tenders/{tender_id}/bidders/{bidder_id}/cross-source-verification",
+    response_model=BidderCrossSourceVerificationReport,
+    status_code=status.HTTP_200_OK,
+)
+async def get_bidder_cross_source_verification(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Run deterministic cross-source verification across bidder documents and mock statutory registries."""
+    await _get_tender_or_404(tender_id, db)
+
+    stmt = select(Bidder).where(
+        Bidder.id == bidder_id,
+        Bidder.tender_id == tender_id,
+    )
+    bidder = (await db.execute(stmt)).scalar_one_or_none()
+    if not bidder:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Bidder with ID {bidder_id} not found for tender {tender_id}",
+        )
+
+    profile = await EvidenceFusionService.fuse_bidder_evidence(
+        bidder_id=bidder_id,
+        db=db,
+        tender_id=tender_id,
+        company_name_override=bidder.company_name,
+    )
+    report = CrossSourceVerifier.verify_profile(profile)
+    return report
 
 
 @router.delete("/tenders/{tender_id}/bidders/{bidder_id}", status_code=status.HTTP_200_OK)
