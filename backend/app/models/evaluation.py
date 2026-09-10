@@ -19,6 +19,10 @@ class ComplianceEvaluation(Base, BaseModelMixin):
     evidence_page_number = Column(Integer, nullable=True)
     evidence_chunk_id = Column(String(100), nullable=True)
 
+    # Phase 7 OCR Provenance
+    extraction_method = Column(String(50), default="DIGITAL_TEXT", nullable=True)
+    ocr_confidence = Column(Numeric(4, 3), nullable=True)
+
     # Detailed deterministic rule check audit
     rule_result = Column(JSON, nullable=True)
 

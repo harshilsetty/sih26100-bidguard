@@ -48,6 +48,21 @@ async def evaluate_clause_compliance(
     combined_evidence_text = " ".join(c.chunk_text for c in evidence_chunks)
     claimed_val_str = f"{interpretation.extracted_value} {interpretation.extracted_unit or ''}".strip() if interpretation.extracted_value is not None else None
 
+    # Identify primary supporting chunk for provenance
+    primary_chunk: Optional[RetrievedEvidenceChunk] = None
+    if evidence_chunks:
+        if interpretation.evidence_chunk_id:
+            for c in evidence_chunks:
+                if c.chunk_id == interpretation.evidence_chunk_id:
+                    primary_chunk = c
+                    break
+        if not primary_chunk:
+            primary_chunk = evidence_chunks[0]
+
+    ext_method = getattr(primary_chunk, "extraction_method", None) or "DIGITAL_TEXT"
+    ocr_conf_val = getattr(primary_chunk, "ocr_confidence", None)
+    ocr_conf = float(ocr_conf_val) if ocr_conf_val is not None else None
+
     # 2. Priority Rule: Contradictions divert to REVIEW
     if interpretation.contradiction_detected:
         reason = (
@@ -69,6 +84,8 @@ async def evaluate_clause_compliance(
             contradiction_detected=True,
             contradiction_details=interpretation.contradiction_details,
             requires_human_confirmation=True,
+            extraction_method=ext_method,
+            ocr_confidence=ocr_conf,
         )
 
     # 3. Priority Rule: Missing or ambiguous evidence diverts to REVIEW
@@ -92,6 +109,8 @@ async def evaluate_clause_compliance(
             contradiction_detected=False,
             contradiction_details=None,
             requires_human_confirmation=True,
+            extraction_method=ext_method,
+            ocr_confidence=ocr_conf,
         )
 
     # 4. Deterministic Python Rule Execution
@@ -130,6 +149,22 @@ async def evaluate_clause_compliance(
             reason = f"OFFICER REVIEW REQUIRED: Qualitative requirement lacks conclusive proof. {interpretation.finding}"
             req_human = True
 
+    # 6. OCR Safety Gating: Low-confidence OCR cannot produce automated decisive PASS or FAIL
+    from app.core.config import settings
+    is_low_conf_ocr = (
+        ext_method == "OCR_LOW_CONFIDENCE"
+        or (ocr_conf is not None and ocr_conf < settings.OCR_CONFIDENCE_THRESHOLD)
+    )
+    if is_low_conf_ocr and status in (ComplianceStatus.PASS, ComplianceStatus.FAIL):
+        pct_str = f"{round(ocr_conf * 100, 1)}%" if ocr_conf is not None else "uncalibrated"
+        reason = (
+            f"LOW CONFIDENCE OCR EVIDENCE: Evaluated from scanned document with low OCR confidence ({pct_str}). "
+            f"Officer visual verification required before final determination. Preliminary evaluation: {reason}"
+        )
+        status = ComplianceStatus.REVIEW
+        confidence = min(confidence, ocr_conf if ocr_conf is not None else 0.50)
+        req_human = True
+
     return ClauseComplianceEvaluation(
         clause_code=code,
         clause_title=title,
@@ -145,6 +180,8 @@ async def evaluate_clause_compliance(
         contradiction_detected=False,
         contradiction_details=None,
         requires_human_confirmation=req_human,
+        extraction_method=ext_method,
+        ocr_confidence=ocr_conf,
     )
 
 

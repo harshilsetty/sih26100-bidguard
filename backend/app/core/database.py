@@ -51,8 +51,12 @@ async def init_db() -> None:
                 try:
                     await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
                     await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
+                    await conn.execute(text("ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS extraction_method VARCHAR(50) DEFAULT 'DIGITAL_TEXT';"))
+                    await conn.execute(text("ALTER TABLE document_chunks ADD COLUMN IF NOT EXISTS ocr_confidence NUMERIC(4, 3);"))
+                    await conn.execute(text("ALTER TABLE compliance_evaluations ADD COLUMN IF NOT EXISTS extraction_method VARCHAR(50) DEFAULT 'DIGITAL_TEXT';"))
+                    await conn.execute(text("ALTER TABLE compliance_evaluations ADD COLUMN IF NOT EXISTS ocr_confidence NUMERIC(4, 3);"))
                 except Exception as ext_err:
-                    logger.warning(f"Could not enable PostgreSQL extensions: {ext_err}")
+                    logger.warning(f"Could not enable PostgreSQL extensions or columns: {ext_err}")
             await conn.run_sync(Base.metadata.create_all)
             logger.info("Database initialized successfully.")
     except Exception as e:

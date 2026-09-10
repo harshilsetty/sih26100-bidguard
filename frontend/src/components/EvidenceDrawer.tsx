@@ -107,6 +107,49 @@ export default function EvidenceDrawer({
   const isBidderBTech01 =
     cell.clause_code === "TECH-01" && bidder?.company_name?.includes("Legacy");
 
+  const extractionMethod = detail?.extraction_method || cell?.extraction_method || "DIGITAL_TEXT";
+  const ocrConfidence = detail?.ocr_confidence ?? cell?.ocr_confidence ?? null;
+
+  const renderExtractionBadge = () => {
+    switch (extractionMethod) {
+      case "OCR_PROCESSED":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Scanned OCR &bull; {ocrConfidence !== null ? `${(ocrConfidence * 100).toFixed(1)}%` : "High"} Conf
+          </span>
+        );
+      case "OCR_LOW_CONFIDENCE":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+            <AlertTriangle className="w-3 h-3 text-amber-600" />
+            Scanned OCR Low Confidence &bull; {ocrConfidence !== null ? `${(ocrConfidence * 100).toFixed(1)}%` : "Low"} Conf
+          </span>
+        );
+      case "OCR_FAILED":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+            <XCircle className="w-3 h-3 text-rose-600" />
+            OCR Failed
+          </span>
+        );
+      case "EMPTY_SCANNED":
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+            Blank Scanned Page
+          </span>
+        );
+      case "DIGITAL_TEXT":
+      default:
+        return (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <FileText className="w-3 h-3 text-blue-600" />
+            Digital PDF Text
+          </span>
+        );
+    }
+  };
+
   const handleSaveOverride = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanReason = overrideReason.trim();
@@ -350,9 +393,38 @@ export default function EvidenceDrawer({
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-500 text-right font-medium">
-                    Source: <strong className="text-slate-700">Technical_Bid.pdf — Page {cell.evidence_page_number || 1}</strong>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <div>{renderExtractionBadge()}</div>
+                    <div>
+                      Source: <strong className="text-slate-700">{detail?.document_name || "Technical_Bid.pdf"} — Page {detail?.evidence_page_number || cell.evidence_page_number || 1}</strong>
+                    </div>
                   </div>
+                </div>
+              )}
+
+              {/* Low Confidence OCR Warning Card for Procurement Officer */}
+              {extractionMethod === "OCR_LOW_CONFIDENCE" && (
+                <div className="bg-amber-50/90 border border-amber-300 rounded-md p-3 text-xs text-amber-900 space-y-1.5 shadow-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span>Officer Review Alert: Low-Confidence Scanned OCR</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-800">
+                    This evidence was extracted from an optically scanned document with confidence below threshold ({ocrConfidence !== null ? `${(ocrConfidence * 100).toFixed(1)}%` : "low"}). OCR output is advisory and not authoritative. Procurement officers must visually inspect the original document to verify crucial numbers, specifications, and dates.
+                  </p>
+                </div>
+              )}
+
+              {/* OCR Failed Alert Card */}
+              {extractionMethod === "OCR_FAILED" && (
+                <div className="bg-rose-50 border border-rose-200 rounded-md p-3 text-xs text-rose-900 space-y-1.5 shadow-xs">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                    <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                    <span>OCR Rasterization / Engine Failure</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-rose-800">
+                    The scanned document page could not be processed by the OCR engine. Automated evidence extraction failed; physical visual inspection of the original file is mandatory.
+                  </p>
                 </div>
               )}
             </div>

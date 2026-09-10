@@ -172,7 +172,7 @@ def evaluate_deterministic_rule(
             message="No structured deterministic rule configured; requires qualitative human verification.",
         )
 
-    rule_type_raw = rule_config.get("type", "CUSTOM")
+    rule_type_raw = rule_config.get("type") or rule_config.get("rule_type", "CUSTOM")
     if hasattr(rule_type_raw, "value"):
         rule_type = rule_type_raw.value
     else:

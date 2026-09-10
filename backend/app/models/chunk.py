@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, Text, ForeignKey
+from sqlalchemy import Column, Integer, Text, ForeignKey, String, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from pgvector.sqlalchemy import Vector
@@ -19,6 +19,10 @@ class DocumentChunk(Base, BaseModelMixin):
     content = Column(Text, nullable=False)
     # Configurable vector embedding dimension matching verified model
     embedding = Column(Vector(dim=settings.EMBEDDING_DIM), nullable=True)
+
+    # Phase 7 OCR Provenance
+    extraction_method = Column(String(50), default="DIGITAL_TEXT", nullable=False, index=True)
+    ocr_confidence = Column(Numeric(4, 3), nullable=True)
 
     # Relationships
     document = relationship("BidDocument", back_populates="chunks")

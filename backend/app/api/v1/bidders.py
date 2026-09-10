@@ -212,6 +212,8 @@ async def create_bidder(
                         end_char=chunk.end_char,
                         content=chunk.chunk_text,
                         embedding=chunk.embedding,
+                        extraction_method=chunk.extraction_method.value if hasattr(chunk.extraction_method, "value") else str(chunk.extraction_method),
+                        ocr_confidence=chunk.ocr_confidence,
                     )
                     db.add(chunk_model)
                 await db.flush()
@@ -309,6 +311,8 @@ async def load_demo_bidders(
                         end_char=chunk.end_char,
                         content=chunk.chunk_text,
                         embedding=chunk.embedding,
+                        extraction_method=chunk.extraction_method.value if hasattr(chunk.extraction_method, "value") else str(chunk.extraction_method),
+                        ocr_confidence=chunk.ocr_confidence,
                     )
                     db.add(chunk_model)
                 await db.flush()
@@ -339,6 +343,8 @@ async def load_demo_bidders(
                             end_char=chunk.end_char,
                             content=chunk.chunk_text,
                             embedding=chunk.embedding,
+                            extraction_method=chunk.extraction_method.value if hasattr(chunk.extraction_method, "value") else str(chunk.extraction_method),
+                            ocr_confidence=chunk.ocr_confidence,
                         )
                         db.add(chunk_model)
                     await db.flush()

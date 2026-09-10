@@ -96,6 +96,8 @@ def _to_detail_response(
         contradiction_details=eval_rec.contradiction_details,
         override_status=ComplianceStatus(eval_rec.override_status) if eval_rec.override_status else None,
         override_reason=eval_rec.override_reason,
+        extraction_method=eval_rec.extraction_method or "DIGITAL_TEXT",
+        ocr_confidence=float(eval_rec.ocr_confidence) if eval_rec.ocr_confidence is not None else None,
     )
 
 
@@ -234,6 +236,8 @@ async def run_tender_compliance_evaluation(
                 eval_record.rule_result = rule_res_dict
                 eval_record.contradiction_detected = clause_eval.contradiction_detected
                 eval_record.contradiction_details = clause_eval.contradiction_details
+                eval_record.extraction_method = clause_eval.extraction_method or "DIGITAL_TEXT"
+                eval_record.ocr_confidence = clause_eval.ocr_confidence
                 # CRITICAL: Preserve existing officer override
                 # eval_record.override_status and eval_record.override_reason are LEFT UNCHANGED!
             else:
@@ -253,6 +257,8 @@ async def run_tender_compliance_evaluation(
                     risk_level="MEDIUM",
                     override_status=None,
                     override_reason=None,
+                    extraction_method=clause_eval.extraction_method or "DIGITAL_TEXT",
+                    ocr_confidence=clause_eval.ocr_confidence,
                 )
                 db.add(eval_record)
 
@@ -360,6 +366,8 @@ async def get_compliance_matrix(
                     document_name=None,
                     override_status=ComplianceStatus(er.override_status) if er.override_status else None,
                     override_reason=er.override_reason,
+                    extraction_method=er.extraction_method or "DIGITAL_TEXT",
+                    ocr_confidence=float(er.ocr_confidence) if er.ocr_confidence is not None else None,
                 )
                 matrix_data[b_key][c.clause_code] = cell
 

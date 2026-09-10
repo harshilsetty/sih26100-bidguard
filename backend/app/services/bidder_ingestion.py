@@ -7,6 +7,7 @@ from app.schemas.bidder import (
     IngestedPageData,
     DocumentExtractionStatus,
     BidderDocumentType,
+    ExtractionMethod,
 )
 
 logger = logging.getLogger(__name__)
@@ -18,16 +19,18 @@ def ingest_bidder_document(
     document_id: Optional[UUID] = None,
     filename: str = "document.pdf",
     doc_type: Optional[str] = None,
+    enable_ocr: Optional[bool] = None,
+    ocr_engine: Optional[Any] = None,
 ) -> IngestedDocumentResult:
-    """Ingest a single PDF document for a specific bidder using PyMuPDF.
+    """Ingest a single PDF document for a specific bidder using PyMuPDF and OCR convergence.
 
-    Preserves exact page-level text, detects empty or scanned pages, and
-    records extraction status without silently discarding failures.
+    Preserves exact page-level text, captures OCR provenance, detects empty or scanned pages,
+    and records extraction status without silently discarding failures.
     """
     doc_id = document_id or uuid4()
 
     try:
-        raw_pages = extract_pages_from_pdf(pdf_source)
+        raw_pages = extract_pages_from_pdf(pdf_source, enable_ocr=enable_ocr, ocr_engine=ocr_engine)
     except Exception as e:
         logger.error(f"Failed to ingest document '{filename}' for bidder {bidder_id}: {e}")
         return IngestedDocumentResult(
@@ -44,12 +47,24 @@ def ingest_bidder_document(
 
     ingested_pages: List[IngestedPageData] = []
     empty_pages_count = 0
+    ocr_pages_count = 0
+    failed_pages_count = 0
 
     for p in raw_pages:
-        # A page is empty or scanned if PyMuPDF extracted zero or near-zero text (< 5 words)
-        is_empty = p.get("is_empty", False) or p.get("word_count", 0) < 5
-        if is_empty:
+        method_str = p.get("extraction_method", ExtractionMethod.DIGITAL_TEXT.value)
+        try:
+            method_enum = ExtractionMethod(method_str)
+        except Exception:
+            method_enum = ExtractionMethod.DIGITAL_TEXT
+
+        conf = p.get("ocr_confidence")
+        is_empty = p.get("is_empty", False)
+        if is_empty or method_enum == ExtractionMethod.EMPTY_SCANNED:
             empty_pages_count += 1
+        if method_enum in {ExtractionMethod.OCR_PROCESSED, ExtractionMethod.OCR_LOW_CONFIDENCE}:
+            ocr_pages_count += 1
+        if method_enum == ExtractionMethod.OCR_FAILED:
+            failed_pages_count += 1
 
         ingested_pages.append(
             IngestedPageData(
@@ -58,6 +73,8 @@ def ingest_bidder_document(
                 word_count=p["word_count"],
                 char_count=p["char_count"],
                 is_empty_or_scanned=is_empty,
+                extraction_method=method_enum,
+                ocr_confidence=conf,
             )
         )
 
@@ -66,16 +83,22 @@ def ingest_bidder_document(
     if total_pages == 0:
         status = DocumentExtractionStatus.FAILED
         error_msg = "PDF contains 0 pages."
+    elif failed_pages_count == total_pages:
+        status = DocumentExtractionStatus.FAILED
+        error_msg = "All pages in this document failed optical character recognition."
     elif empty_pages_count == total_pages:
         status = DocumentExtractionStatus.EMPTY_SCANNED
-        error_msg = "All pages in this document appear to be empty or scanned images without an OCR text layer."
+        error_msg = "All pages in this document appear to be empty or scanned images without readable text."
+    elif ocr_pages_count > 0:
+        status = DocumentExtractionStatus.OCR_PROCESSED
+        error_msg = None
     else:
         status = DocumentExtractionStatus.EXTRACTED
         error_msg = None
 
     logger.info(
         f"Ingested bidder document '{filename}' ({doc_id}) for bidder {bidder_id}: "
-        f"{total_pages} total pages, {empty_pages_count} empty/scanned, status={status.value}."
+        f"{total_pages} total pages, {ocr_pages_count} OCR, {empty_pages_count} empty/scanned, status={status.value}."
     )
 
     return IngestedDocumentResult(
@@ -94,8 +117,10 @@ def ingest_bidder_document(
 def ingest_multiple_bidder_documents(
     documents: List[Dict[str, Any]],
     bidder_id: UUID,
+    enable_ocr: Optional[bool] = None,
+    ocr_engine: Optional[Any] = None,
 ) -> List[IngestedDocumentResult]:
-    """Ingest multiple PDF documents for a single bidder.
+    """Ingest multiple PDF documents for a single bidder with OCR convergence.
 
     Args:
         documents: List of dicts, each containing:
@@ -104,6 +129,8 @@ def ingest_multiple_bidder_documents(
             - "doc_type": optional str
             - "document_id": optional UUID
         bidder_id: UUID of the bidder owning these documents.
+        enable_ocr: Optional OCR activation override.
+        ocr_engine: Optional BaseOCREngine override.
 
     Returns:
         List of IngestedDocumentResult objects preserving exact page provenance.
@@ -122,6 +149,8 @@ def ingest_multiple_bidder_documents(
             document_id=doc_id,
             filename=filename,
             doc_type=doc_type,
+            enable_ocr=enable_ocr,
+            ocr_engine=ocr_engine,
         )
         results.append(result)
 

@@ -61,6 +61,8 @@ class ClauseComplianceEvaluation(BaseModel):
     contradiction_detected: bool = False
     contradiction_details: Optional[str] = None
     requires_human_confirmation: bool = False
+    extraction_method: Optional[str] = "DIGITAL_TEXT"
+    ocr_confidence: Optional[float] = None
 
 
 class BidderComplianceReport(BaseModel):
@@ -90,6 +92,8 @@ class EvaluationCellSummary(BaseModel):
     document_name: Optional[str] = None
     override_status: Optional[ComplianceStatus] = None
     override_reason: Optional[str] = None
+    extraction_method: Optional[str] = "DIGITAL_TEXT"
+    ocr_confidence: Optional[float] = None
 
 
 class ClauseSummary(BaseModel):
@@ -146,6 +150,8 @@ class EvaluationDetailResponse(BaseModel):
     contradiction_details: Optional[str] = None
     override_status: Optional[ComplianceStatus] = None
     override_reason: Optional[str] = None
+    extraction_method: Optional[str] = "DIGITAL_TEXT"
+    ocr_confidence: Optional[float] = None
 
 
 class OfficerOverrideRequest(BaseModel):

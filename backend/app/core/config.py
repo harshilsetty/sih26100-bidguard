@@ -44,5 +44,11 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 50
 
+    # OCR Settings (Phase 7)
+    ENABLE_OCR: bool = True
+    OCR_ENGINE: str = "paddle"  # "paddle" or "mock"
+    OCR_LANGUAGE: str = "en"  # Default deployment language: English
+    OCR_CONFIDENCE_THRESHOLD: float = 0.75
+
 
 settings = Settings()

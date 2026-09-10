@@ -1,7 +1,7 @@
 import logging
 from typing import List, Optional
 from uuid import UUID
-from app.schemas.bidder import IngestedDocumentResult, IngestedPageData, DocumentChunkItem
+from app.schemas.bidder import IngestedDocumentResult, IngestedPageData, DocumentChunkItem, ExtractionMethod
 
 logger = logging.getLogger(__name__)
 
@@ -17,16 +17,32 @@ def chunk_page_text(
     chunk_size: int = DEFAULT_CHUNK_SIZE,
     chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
 ) -> List[DocumentChunkItem]:
-    """Deterministically chunk a single page's text while preserving character offsets.
+    """Deterministically chunk a single page's text while preserving character offsets and OCR provenance.
 
     Chunks never cross page boundaries to ensure strict page provenance.
+    Enabled for: DIGITAL_TEXT, OCR_PROCESSED, OCR_LOW_CONFIDENCE.
+    Disabled for: EMPTY_SCANNED, OCR_FAILED.
     """
     text = page.text.strip()
-    if not text or page.is_empty_or_scanned:
+
+    method = getattr(page, "extraction_method", ExtractionMethod.DIGITAL_TEXT)
+    if isinstance(method, str):
+        try:
+            method = ExtractionMethod(method)
+        except Exception:
+            method = ExtractionMethod.DIGITAL_TEXT
+
+    # Do not create chunks for genuinely empty scans or failed OCR
+    if not text or method in {ExtractionMethod.EMPTY_SCANNED, ExtractionMethod.OCR_FAILED}:
+        return []
+
+    # If page was marked empty/scanned without OCR text
+    if getattr(page, "is_empty_or_scanned", False) and method not in {ExtractionMethod.OCR_PROCESSED, ExtractionMethod.OCR_LOW_CONFIDENCE}:
         return []
 
     chunks: List[DocumentChunkItem] = []
     text_len = len(page.text)
+    conf = getattr(page, "ocr_confidence", None)
 
     # If the page text fits comfortably in a single chunk
     if text_len <= chunk_size:
@@ -42,6 +58,8 @@ def chunk_page_text(
                 chunk_text=page.text,
                 start_char=0,
                 end_char=text_len,
+                extraction_method=method,
+                ocr_confidence=conf,
             )
         )
         return chunks
@@ -82,6 +100,8 @@ def chunk_page_text(
                     chunk_text=chunk_slice,
                     start_char=start,
                     end_char=end,
+                    extraction_method=method,
+                    ocr_confidence=conf,
                 )
             )
             chunk_idx += 1

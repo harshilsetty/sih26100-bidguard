@@ -117,6 +117,13 @@ export interface ClauseSummary {
   rule_type?: string | null;
 }
 
+export type ExtractionMethod =
+  | "DIGITAL_TEXT"
+  | "OCR_PROCESSED"
+  | "OCR_LOW_CONFIDENCE"
+  | "EMPTY_SCANNED"
+  | "OCR_FAILED";
+
 export interface EvaluationCellSummary {
   evaluation_id: string;
   bidder_id?: string;
@@ -133,6 +140,8 @@ export interface EvaluationCellSummary {
   document_name?: string | null;
   override_status?: "PASS" | "FAIL" | "REVIEW" | null;
   override_reason?: string | null;
+  extraction_method?: ExtractionMethod | string | null;
+  ocr_confidence?: number | null;
 }
 
 export interface ComplianceMatrixResponse {
@@ -193,6 +202,8 @@ export interface EvaluationDetailResponse {
   override_reason?: string | null;
   overridden_by?: string | null;
   overridden_at?: string | null;
+  extraction_method?: ExtractionMethod | string | null;
+  ocr_confidence?: number | null;
 }
 
 export interface OfficerOverrideRequest {

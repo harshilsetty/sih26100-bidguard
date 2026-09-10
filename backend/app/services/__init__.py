@@ -3,6 +3,14 @@ from app.services.evidence_fusion_service import EvidenceFusionService
 from app.services.cross_source_verifier import CrossSourceVerifier
 from app.services.scoring_service import ScoringAndRankingService
 from app.services.recommendation_service import RecommendationService
+from app.services.ocr_engine import (
+    BaseOCREngine,
+    MockOCREngine,
+    PaddleOCREngine,
+    OCRResult,
+    get_ocr_engine,
+    set_ocr_engine,
+)
 
 __all__ = [
     "NvidiaClient",
@@ -11,4 +19,10 @@ __all__ = [
     "CrossSourceVerifier",
     "ScoringAndRankingService",
     "RecommendationService",
+    "BaseOCREngine",
+    "MockOCREngine",
+    "PaddleOCREngine",
+    "OCRResult",
+    "get_ocr_engine",
+    "set_ocr_engine",
 ]

@@ -18,8 +18,17 @@ class BidderDocumentType(str, Enum):
 class DocumentExtractionStatus(str, Enum):
     PENDING = "PENDING"
     EXTRACTED = "EXTRACTED"
+    OCR_PROCESSED = "OCR_PROCESSED"
     EMPTY_SCANNED = "EMPTY_SCANNED"
     FAILED = "FAILED"
+
+
+class ExtractionMethod(str, Enum):
+    DIGITAL_TEXT = "DIGITAL_TEXT"
+    OCR_PROCESSED = "OCR_PROCESSED"
+    OCR_LOW_CONFIDENCE = "OCR_LOW_CONFIDENCE"
+    EMPTY_SCANNED = "EMPTY_SCANNED"
+    OCR_FAILED = "OCR_FAILED"
 
 
 class IngestedPageData(BaseModel):
@@ -28,6 +37,8 @@ class IngestedPageData(BaseModel):
     word_count: int
     char_count: int
     is_empty_or_scanned: bool = False
+    extraction_method: ExtractionMethod = ExtractionMethod.DIGITAL_TEXT
+    ocr_confidence: Optional[float] = None
 
 
 class IngestedDocumentResult(BaseModel):
@@ -53,6 +64,8 @@ class DocumentChunkItem(BaseModel):
     start_char: Optional[int] = None
     end_char: Optional[int] = None
     embedding: Optional[List[float]] = None
+    extraction_method: ExtractionMethod = ExtractionMethod.DIGITAL_TEXT
+    ocr_confidence: Optional[float] = None
 
 
 class EvidenceRetrievalQuery(BaseModel):
@@ -74,6 +87,8 @@ class RetrievedEvidenceChunk(BaseModel):
     similarity_score: float
     start_char: Optional[int] = None
     end_char: Optional[int] = None
+    extraction_method: ExtractionMethod = ExtractionMethod.DIGITAL_TEXT
+    ocr_confidence: Optional[float] = None
 
 
 class ClauseEvidenceResponse(BaseModel):

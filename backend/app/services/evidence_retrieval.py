@@ -12,6 +12,7 @@ from app.schemas.bidder import (
     DocumentChunkItem,
     RetrievedEvidenceChunk,
     ClauseEvidenceResponse,
+    ExtractionMethod,
 )
 from app.services.embedding_service import EmbeddingService, get_embedding_service
 
@@ -134,6 +135,8 @@ def retrieve_evidence_from_memory(
                 similarity_score=round(float(final_score), 4),
                 start_char=c.start_char,
                 end_char=c.end_char,
+                extraction_method=getattr(c, "extraction_method", ExtractionMethod.DIGITAL_TEXT),
+                ocr_confidence=getattr(c, "ocr_confidence", None),
             )
         )
 
@@ -182,6 +185,8 @@ async def retrieve_evidence_from_db(
                 similarity_score=round(float(sim), 4),
                 start_char=c.start_char,
                 end_char=c.end_char,
+                extraction_method=getattr(c, "extraction_method", ExtractionMethod.DIGITAL_TEXT.value),
+                ocr_confidence=float(c.ocr_confidence) if c.ocr_confidence is not None else None,
             )
         )
 
