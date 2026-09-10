@@ -11,6 +11,21 @@ from app.services.ocr_engine import (
     get_ocr_engine,
     set_ocr_engine,
 )
+from app.services.statutory_adapters import (
+    BaseSourceAdapter,
+    sanitize_payload,
+    GSTNSourceAdapter,
+    UdyamSourceAdapter,
+    MCASourceAdapter,
+    IncomeTaxSourceAdapter,
+    MIISourceAdapter,
+    StatutoryAdapterRegistry,
+    get_statutory_registry,
+)
+from app.services.statutory_orchestrator import (
+    StatutoryVerificationOrchestrator,
+    get_statutory_orchestrator,
+)
 
 __all__ = [
     "NvidiaClient",
@@ -25,4 +40,15 @@ __all__ = [
     "OCRResult",
     "get_ocr_engine",
     "set_ocr_engine",
+    "BaseSourceAdapter",
+    "sanitize_payload",
+    "GSTNSourceAdapter",
+    "UdyamSourceAdapter",
+    "MCASourceAdapter",
+    "IncomeTaxSourceAdapter",
+    "MIISourceAdapter",
+    "StatutoryAdapterRegistry",
+    "get_statutory_registry",
+    "StatutoryVerificationOrchestrator",
+    "get_statutory_orchestrator",
 ]

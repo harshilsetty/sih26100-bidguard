@@ -64,6 +64,16 @@ from app.schemas.recommendation import (
     AuditRecordItem,
     AuditTrailResponse,
 )
+from app.schemas.statutory_verification import (
+    StatutoryAuthority,
+    SourceMode,
+    SourceConnectionStatus,
+    SourceVerificationStatus,
+    SourceVerificationResult,
+    StatutoryVerificationQuery,
+    BidderStatutoryVerificationSummary,
+    STATUTORY_MOCK_BANNER,
+)
 
 __all__ = [
     "HealthResponse",
@@ -116,4 +126,12 @@ __all__ = [
     "OfficerReviewRequest",
     "AuditRecordItem",
     "AuditTrailResponse",
+    "StatutoryAuthority",
+    "SourceMode",
+    "SourceConnectionStatus",
+    "SourceVerificationStatus",
+    "SourceVerificationResult",
+    "StatutoryVerificationQuery",
+    "BidderStatutoryVerificationSummary",
+    "STATUTORY_MOCK_BANNER",
 ]

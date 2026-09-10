@@ -367,3 +367,54 @@ export interface AuditTrailResponse {
   records: AuditRecordItem[];
 }
 
+export type StatutoryAuthority = "GSTN" | "UDYAM" | "MCA" | "INCOME_TAX" | "MII";
+export type SourceMode = "MOCK" | "LIVE";
+export type SourceConnectionStatus = "SUCCESS" | "TIMEOUT" | "UNAVAILABLE" | "RATE_LIMITED" | "AUTH_FAILURE" | "ERROR";
+export type SourceVerificationStatus = "VERIFIED" | "NOT_FOUND" | "INACTIVE" | "EXPIRED" | "UNVERIFIED" | "DISCREPANCY" | "FAILED";
+
+export interface SourceVerificationResult {
+  verification_id: string;
+  authority: StatutoryAuthority;
+  source_name: string;
+  query_identifier: string;
+  identifier_type: string;
+  mode: SourceMode;
+  connection_status: SourceConnectionStatus;
+  verification_status: SourceVerificationStatus;
+  retrieved_at: string;
+  as_of_date?: string | null;
+  data_payload: Record<string, any>;
+  confidence_score: number;
+  provenance_note: string;
+  error_message?: string | null;
+  execution_time_ms: number;
+}
+
+export interface StatutoryVerificationQuery {
+  bidder_id?: string | null;
+  tender_id?: string | null;
+  authorities?: StatutoryAuthority[] | null;
+  identifiers?: Record<string, string>;
+  as_of_date?: string | null;
+  mode?: SourceMode;
+}
+
+export interface BidderStatutoryVerificationSummary {
+  bidder_id?: string | null;
+  tender_id?: string | null;
+  results: SourceVerificationResult[];
+  total_sources: number;
+  successful_connections: number;
+  failed_connections: number;
+  as_of_date?: string | null;
+  verified_at: string;
+  disclaimer: string;
+}
+
+export interface StatutoryAdapterInfo {
+  authority: StatutoryAuthority;
+  source_name: string;
+  supported_identifier_types: string[];
+  mode: SourceMode;
+  disclaimer: string;
+}

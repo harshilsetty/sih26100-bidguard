@@ -44,7 +44,9 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     """Initialize database extensions and create tables, with optional SQLite fallback if explicitly enabled."""
     global engine, AsyncSessionLocal
+    import app.models  # noqa: F401
     current_is_sqlite = "sqlite" in settings.DATABASE_URL
+
     try:
         async with engine.begin() as conn:
             if not current_is_sqlite:

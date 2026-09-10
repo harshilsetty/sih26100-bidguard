@@ -18,7 +18,12 @@ import {
   OfficerReviewRequest,
   AuditRecordItem,
   AuditTrailResponse,
+  StatutoryVerificationQuery,
+  BidderStatutoryVerificationSummary,
+  SourceVerificationResult,
+  StatutoryAdapterInfo,
 } from "./types";
+
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL !== undefined
@@ -481,3 +486,49 @@ export async function fetchBidderAuditTrail(
   return res.json();
 }
 
+export async function verifyStatutorySources(
+  query: StatutoryVerificationQuery
+): Promise<BidderStatutoryVerificationSummary> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/statutory/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(query),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to verify statutory sources: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchStatutoryStatus(params?: {
+  bidderId?: string;
+  tenderId?: string;
+  authority?: string;
+}): Promise<SourceVerificationResult[]> {
+  const queryParts: string[] = [];
+  if (params?.bidderId) queryParts.push(`bidder_id=${encodeURIComponent(params.bidderId)}`);
+  if (params?.tenderId) queryParts.push(`tender_id=${encodeURIComponent(params.tenderId)}`);
+  if (params?.authority) queryParts.push(`authority=${encodeURIComponent(params.authority)}`);
+  const qs = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+
+  const res = await fetch(`${API_BASE_URL}/api/v1/statutory/status${qs}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch statutory status: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchStatutoryAdapters(): Promise<StatutoryAdapterInfo[]> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/statutory/adapters`, {
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch statutory adapters: ${res.status}`);
+  }
+  return res.json();
+}

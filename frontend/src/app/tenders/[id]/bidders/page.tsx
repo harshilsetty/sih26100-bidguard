@@ -28,6 +28,8 @@ import {
   Database,
   Landmark,
 } from "lucide-react";
+import StatutoryVerificationPanel from "@/components/StatutoryVerificationPanel";
+
 
 // Prototype fallback demo data if backend has not loaded yet
 const PROTOTYPE_DEMO_BIDDERS: Bidder[] = [
@@ -359,149 +361,9 @@ export default function TenderBiddersPage({
         </div>
       </div>
 
-      {/* Integrated Verification Sources (Preview) — Phase 6 Foundation */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-md bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-900">
-              <Landmark className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                Integrated Verification Sources (Preview)
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Government registry contracts & synthetic baseline datasets for multi-source evidence fusion
-              </p>
-            </div>
-          </div>
-          <span className="inline-flex items-center px-2.5 py-1 rounded text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200">
-            MOCK — SIH DEMONSTRATION
-          </span>
-        </div>
+      {/* Statutory Verification Orchestrator Panel — Phase 8.1 */}
+      <StatutoryVerificationPanel tenderId={tenderId} bidders={bidders} />
 
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-600 leading-relaxed">
-          <span className="font-semibold text-slate-800">Architecture Notice: </span>
-          Government source connections shown here are synthetic demonstration data for SIH evaluation. Multi-source evidence fusion will be activated in subsequent verification phases.
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5 pt-1">
-          {/* 1. GSTN */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs">GSTN</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-900 border border-amber-200">
-                MOCK — SIH DEMONSTRATION
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
-              Goods & Services Tax Network turnover & filing regularity
-            </p>
-            <div className="pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Primary Key:</span>
-                <span className="font-mono font-medium text-slate-800">GSTIN</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Records:</span>
-                <span className="font-semibold text-slate-700">~1,000 Loaded</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 2. Udyam / MSME */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs">Udyam / MSME</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-900 border border-amber-200">
-                MOCK — SIH DEMONSTRATION
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
-              Ministry of MSME enterprise classification & exemption qualification
-            </p>
-            <div className="pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Primary Key:</span>
-                <span className="font-mono font-medium text-slate-800">Udyam No.</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Records:</span>
-                <span className="font-semibold text-slate-700">~1,000 Loaded</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 3. MCA */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs">MCA</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-900 border border-amber-200">
-                MOCK — SIH DEMONSTRATION
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
-              Ministry of Corporate Affairs company registry & active status
-            </p>
-            <div className="pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Primary Key:</span>
-                <span className="font-mono font-medium text-slate-800">CIN</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Records:</span>
-                <span className="font-semibold text-slate-700">~1,000 Loaded</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 4. Income Tax / PAN */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs">Income Tax / PAN</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-900 border border-amber-200">
-                MOCK — SIH DEMONSTRATION
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
-              Income Tax Department PAN status & fiscal filing verification
-            </p>
-            <div className="pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Primary Key:</span>
-                <span className="font-mono font-medium text-slate-800">PAN</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Records:</span>
-                <span className="font-semibold text-slate-700">~1,000 Loaded</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 5. Make in India */}
-          <div className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-slate-900 text-xs">Make in India</span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100/70 text-amber-900 border border-amber-200">
-                MOCK — SIH DEMONSTRATION
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-500 line-clamp-2 leading-snug">
-              DPIIT / statutory auditor verified domestic local content percentage
-            </p>
-            <div className="pt-2 border-t border-slate-200/80 text-[11px] space-y-1 text-slate-600">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Primary Key:</span>
-                <span className="font-mono font-medium text-slate-800">Audit ID</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Records:</span>
-                <span className="font-semibold text-slate-700">~1,000 Loaded</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Add Custom Bidder Modal */}
       {isAddModalOpen && (
