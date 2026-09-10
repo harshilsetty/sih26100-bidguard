@@ -6,6 +6,10 @@ import {
   fetchComplianceMatrix,
   triggerComplianceEvaluation,
   fetchTenderRanking,
+  fetchBidderRecommendation,
+  generateBidderRecommendation,
+  submitOfficerReview,
+  fetchBidderAuditTrail,
 } from "@/lib/api-client";
 import {
   ComplianceMatrixResponse,
@@ -15,6 +19,10 @@ import {
   EvaluationDetailResponse,
   TenderBidderRankingResponse,
   RankedBidderItem,
+  AIRecommendationResponse,
+  OfficerReviewRequest,
+  AuditRecordItem,
+  OfficerAction,
 } from "@/lib/types";
 import EvidenceDrawer from "@/components/EvidenceDrawer";
 import {
@@ -35,6 +43,13 @@ import {
   Building2,
   FileCheck,
   Check,
+  Sparkles,
+  History,
+  Send,
+  Clock,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 // Prototype Presentation Benchmark Matrix Data (Strict 16 PASS, 13 FAIL, 4 REVIEW)
@@ -166,6 +181,22 @@ export default function ComplianceMatrixPage({
   const [rankingError, setRankingError] = useState<string | null>(null);
   const [shortlistFilter, setShortlistFilter] = useState<"TOP_3" | "TOP_5" | "ALL">("ALL");
 
+  // AI Recommendation & Audit State (Phase 6.5)
+  const [selectedBidderIdForRec, setSelectedBidderIdForRec] = useState<string>("");
+  const [recommendation, setRecommendation] = useState<AIRecommendationResponse | null>(null);
+  const [recLoading, setRecLoading] = useState<boolean>(false);
+  const [recGenerating, setRecGenerating] = useState<boolean>(false);
+  const [recError, setRecError] = useState<string | null>(null);
+
+  const [auditTrail, setAuditTrail] = useState<AuditRecordItem[]>([]);
+  const [auditLoading, setAuditLoading] = useState<boolean>(false);
+
+  const [officerAction, setOfficerAction] = useState<OfficerAction>("ACKNOWLEDGED");
+  const [officerJustification, setOfficerJustification] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState<boolean>(false);
+  const [reviewMsg, setReviewMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showAuditLog, setShowAuditLog] = useState<boolean>(true);
+
   const loadRanking = async () => {
     setRankingLoading(true);
     setRankingError(null);
@@ -181,6 +212,74 @@ export default function ComplianceMatrixPage({
     }
   };
 
+  const loadRecommendationAndAudit = async (bId: string) => {
+    if (!bId) return;
+    setRecLoading(true);
+    setAuditLoading(true);
+    setRecError(null);
+    setReviewMsg(null);
+    try {
+      const rec = await fetchBidderRecommendation(tenderId, bId);
+      setRecommendation(rec);
+    } catch (err: any) {
+      setRecError(err.message || "Failed to load recommendation");
+    } finally {
+      setRecLoading(false);
+    }
+
+    try {
+      const trail = await fetchBidderAuditTrail(tenderId, bId);
+      setAuditTrail(trail.records || []);
+    } catch {
+      setAuditTrail([]);
+    } finally {
+      setAuditLoading(false);
+    }
+  };
+
+  const handleGenerateRecommendation = async () => {
+    if (!selectedBidderIdForRec) return;
+    setRecGenerating(true);
+    setRecError(null);
+    try {
+      const rec = await generateBidderRecommendation(tenderId, selectedBidderIdForRec);
+      setRecommendation(rec);
+      // Refresh audit trail
+      const trail = await fetchBidderAuditTrail(tenderId, selectedBidderIdForRec);
+      setAuditTrail(trail.records || []);
+    } catch (err: any) {
+      setRecError(err.message || "Failed to generate recommendation");
+    } finally {
+      setRecGenerating(false);
+    }
+  };
+
+  const handleSubmitOfficerReview = async () => {
+    if (!selectedBidderIdForRec) return;
+    if (officerJustification.trim().length < 5) {
+      setReviewMsg({ type: "error", text: "Justification must be at least 5 characters long." });
+      return;
+    }
+    setSubmittingReview(true);
+    setReviewMsg(null);
+    try {
+      await submitOfficerReview(tenderId, selectedBidderIdForRec, {
+        action: officerAction,
+        justification: officerJustification.trim(),
+        recommendation_id: recommendation?.recommendation_id,
+      });
+      setReviewMsg({ type: "success", text: `Officer review recorded successfully (${officerAction}).` });
+      setOfficerJustification("");
+      // Refresh audit trail
+      const trail = await fetchBidderAuditTrail(tenderId, selectedBidderIdForRec);
+      setAuditTrail(trail.records || []);
+    } catch (err: any) {
+      setReviewMsg({ type: "error", text: err.message || "Failed to record officer review" });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
   // Evidence Drawer State
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState<EvaluationCellSummary | null>(null);
@@ -193,14 +292,26 @@ export default function ComplianceMatrixPage({
         const data = await fetchComplianceMatrix(tenderId);
         if (data && data.clauses && data.clauses.length > 0) {
           setMatrixData(data);
+          if (data.bidders && data.bidders.length > 0 && !selectedBidderIdForRec) {
+            setSelectedBidderIdForRec(data.bidders[0].id);
+          }
         }
       } catch {
         // Fallback gracefully maintains complete 11-requirement prototype data
+        if (PROTOTYPE_BIDDERS.length > 0 && !selectedBidderIdForRec) {
+          setSelectedBidderIdForRec(PROTOTYPE_BIDDERS[0].id);
+        }
       }
     };
     loadMatrix();
     loadRanking();
   }, [tenderId]);
+
+  useEffect(() => {
+    if (selectedBidderIdForRec) {
+      loadRecommendationAndAudit(selectedBidderIdForRec);
+    }
+  }, [tenderId, selectedBidderIdForRec]);
 
   const handleReRunEvaluation = async () => {
     setReEvaluating(true);
@@ -520,6 +631,448 @@ export default function ComplianceMatrixPage({
               })}
           </div>
         )}
+      </div>
+
+      {/* PHASE 6.5: AI PROCUREMENT RECOMMENDATION & OFFICER REVIEW */}
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+        {/* Section Header & Bidder Selector */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-base font-extrabold text-slate-900 tracking-tight">
+                AI Procurement Recommendation & Officer Review
+              </h2>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Decision Support
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Explainable AI recommendations grounded in verified compliance facts. Final adjudication remains with the Procurement Officer.
+            </p>
+          </div>
+
+          {/* Bidder Switcher Tabs */}
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1 lg:pb-0">
+            <span className="text-xs font-semibold text-slate-600 mr-1 flex-shrink-0">Review Bidder:</span>
+            {(matrixData.bidders || []).map((b) => (
+              <button
+                key={b.id}
+                onClick={() => setSelectedBidderIdForRec(b.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1.5 flex-shrink-0 ${
+                  selectedBidderIdForRec === b.id
+                    ? "bg-indigo-900 text-white shadow-xs"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>{b.company_name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Recommendation Body */}
+        {recLoading ? (
+          <div className="flex items-center justify-center py-12 text-slate-500 text-sm space-x-2">
+            <RotateCw className="w-4 h-4 animate-spin text-indigo-600" />
+            <span>Loading recommendation data...</span>
+          </div>
+        ) : !recommendation ? (
+          <div className="bg-slate-50 rounded-xl p-8 text-center space-y-4 border border-slate-200">
+            <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
+              <Sparkles className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-bold text-slate-900">No AI Recommendation Generated Yet</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Generate an explainable AI recommendation for this bidder based on deterministic scoring, statutory cross-source verification, and evidence completeness.
+              </p>
+            </div>
+            <button
+              onClick={handleGenerateRecommendation}
+              disabled={recGenerating}
+              className="px-4 py-2 bg-indigo-900 hover:bg-indigo-800 text-white rounded-lg text-xs font-bold transition shadow-xs inline-flex items-center space-x-2"
+            >
+              {recGenerating ? (
+                <>
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Synthesizing Facts & Verifying Grounding...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Generate AI Recommendation</span>
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Top Cards: Recommendation + Meta */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Category Card */}
+              <div
+                className={`p-4 rounded-xl border flex flex-col justify-between ${
+                  recommendation.recommendation === "RECOMMENDED_FOR_OFFICER_REVIEW"
+                    ? "bg-emerald-50/70 border-emerald-300 text-emerald-950"
+                    : recommendation.recommendation === "HIGH_RISK_OFFICER_REVIEW"
+                    ? "bg-rose-50/70 border-rose-300 text-rose-950"
+                    : "bg-amber-50/70 border-amber-300 text-amber-950"
+                }`}
+              >
+                <div className="space-y-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                    Recommendation Category
+                  </div>
+                  <div className="text-sm font-extrabold flex items-center space-x-1.5">
+                    {recommendation.recommendation === "RECOMMENDED_FOR_OFFICER_REVIEW" ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    )}
+                    <span>{recommendation.recommendation.replace(/_/g, " ")}</span>
+                  </div>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-slate-200/60 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-600">Decision Confidence</span>
+                  <span className="font-mono font-extrabold">{recommendation.confidence}</span>
+                </div>
+              </div>
+
+              {/* Source & Model Identifier */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                    Source & Provenance
+                  </div>
+                  <div className="flex items-center space-x-2 pt-0.5">
+                    <span
+                      className={`px-2 py-0.5 rounded text-xs font-extrabold border ${
+                        recommendation.recommendation_source === "AI"
+                          ? "bg-purple-100 text-purple-800 border-purple-300"
+                          : "bg-slate-200 text-slate-800 border-slate-300"
+                      }`}
+                    >
+                      {recommendation.recommendation_source === "AI" ? "AI Generated (GPT-OSS 20B)" : "DETERMINISTIC FALLBACK"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 pt-1">
+                    Engine: <span className="font-mono text-slate-700">{recommendation.model_identifier}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-[11px] text-slate-400">
+                  Timestamp: {new Date(recommendation.generated_at).toLocaleString()}
+                </div>
+              </div>
+
+              {/* Score & Risk Snapshot */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                <div className="space-y-1">
+                  <div className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+                    Compliance & Safety Snapshot
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-2xl font-black text-blue-950">
+                      {recommendation.overall_score.toFixed(1)} <span className="text-xs font-semibold text-slate-500">/ 100</span>
+                    </span>
+                    <span
+                      className={`px-2.5 py-1 rounded-md text-xs font-extrabold border ${
+                        recommendation.risk_level === "LOW"
+                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                          : recommendation.risk_level === "HIGH"
+                          ? "bg-rose-100 text-rose-800 border-rose-300"
+                          : "bg-amber-100 text-amber-800 border-amber-300"
+                      }`}
+                    >
+                      {recommendation.risk_level} RISK
+                    </span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleGenerateRecommendation}
+                  disabled={recGenerating}
+                  className="mt-2 text-[11px] font-bold text-indigo-700 hover:text-indigo-900 flex items-center space-x-1"
+                >
+                  <RotateCw className={`w-3 h-3 ${recGenerating ? "animate-spin" : ""}`} />
+                  <span>Re-evaluate Recommendation</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Executive Summary */}
+            <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-4">
+              <div className="text-xs font-bold text-blue-900 uppercase tracking-wider mb-1">Executive Summary</div>
+              <p className="text-xs text-slate-700 leading-relaxed">{recommendation.executive_summary}</p>
+            </div>
+
+            {/* Key Reasons & Priority Actions Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Key Reasons */}
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+                  Key Reasons & Grounded Evidence ({recommendation.key_reasons.length})
+                </div>
+                <ul className="space-y-2">
+                  {recommendation.key_reasons.map((r, rIdx) => (
+                    <li key={rIdx} className="text-xs text-slate-700 flex items-start space-x-2">
+                      <span className="w-4 h-4 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                        {rIdx + 1}
+                      </span>
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Priority Actions */}
+              <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">
+                  Recommended Priority Actions ({recommendation.priority_actions.length})
+                </div>
+                <ul className="space-y-2">
+                  {recommendation.priority_actions.map((act, aIdx) => (
+                    <li key={aIdx} className="text-xs text-slate-700 flex items-start space-x-2">
+                      <span className="text-indigo-600 font-bold flex-shrink-0">→</span>
+                      <span>{act}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Positive Findings & Risk Findings Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendation.positive_findings.length > 0 && (
+                <div className="bg-emerald-50/40 border border-emerald-200 rounded-xl p-4 space-y-2">
+                  <div className="text-xs font-bold text-emerald-900 uppercase tracking-wider">
+                    Positive Findings
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-emerald-950">
+                    {recommendation.positive_findings.map((p, pIdx) => (
+                      <li key={pIdx} className="flex items-start space-x-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {recommendation.risk_findings.length > 0 && (
+                <div className="bg-rose-50/40 border border-rose-200 rounded-xl p-4 space-y-2">
+                  <div className="text-xs font-bold text-rose-900 uppercase tracking-wider">
+                    Risk & Inconsistency Findings
+                  </div>
+                  <ul className="space-y-1.5 text-xs text-rose-950">
+                    {recommendation.risk_findings.map((rf, rfIdx) => (
+                      <li key={rfIdx} className="flex items-start space-x-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0 mt-0.5" />
+                        <span>{rf}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Supporting References (Click to inspect in EvidenceDrawer) */}
+            {recommendation.supporting_references && recommendation.supporting_references.length > 0 && (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+                <div className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Supporting Evidence References ({recommendation.supporting_references.length})
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {recommendation.supporting_references.map((ref, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => {
+                        if (ref.clause_code && matrixData.matrix[selectedBidderIdForRec]?.[ref.clause_code]) {
+                          const cell = matrixData.matrix[selectedBidderIdForRec][ref.clause_code];
+                          const clause = (matrixData.clauses || []).find((c) => c.clause_code === ref.clause_code) || null;
+                          const bidder = (matrixData.bidders || []).find((b) => b.id === selectedBidderIdForRec) || null;
+                          if (cell && clause && bidder) {
+                            handleCellClick(cell, clause, bidder);
+                          }
+                        }
+                      }}
+                      className="text-left bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 rounded-lg p-2.5 transition text-xs space-y-1 group"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-indigo-900 text-[11px]">
+                          {ref.clause_code || ref.reference_id}
+                        </span>
+                        <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-blue-600" />
+                      </div>
+                      <div className="text-[11px] text-slate-600 truncate">{ref.source_name} {ref.page ? `(Page ${ref.page})` : ""}</div>
+                      <div className="text-[10px] text-slate-500 line-clamp-1 italic">{ref.summary}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Statutory Disclaimer */}
+            <div className="text-[11px] text-slate-500 italic bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-center">
+              {recommendation.disclaimer}
+            </div>
+          </div>
+        )}
+
+        {/* PROCUREMENT OFFICER REVIEW PANEL */}
+        <div className="border-t border-slate-200 pt-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-extrabold text-slate-900">Procurement Officer Adjudication</h3>
+              <p className="text-xs text-slate-500">Record officer decision support action. Mandates written justification.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
+            {[
+              { id: "ACKNOWLEDGED", label: "Acknowledge", desc: "Acknowledge AI findings without altering review flow." },
+              { id: "NEEDS_ADDITIONAL_EVIDENCE", label: "Request Evidence", desc: "Flag incomplete items for bidder clarification." },
+              { id: "OVERRIDE_REVIEW", label: "Override Review", desc: "Submit officer adjudication overriding automated status." },
+              { id: "FINAL_OFFICER_DECISION", label: "Record Decision", desc: "Record formal officer procurement adjudication." },
+            ].map((act) => (
+              <button
+                key={act.id}
+                type="button"
+                onClick={() => setOfficerAction(act.id as OfficerAction)}
+                className={`p-3 rounded-lg border text-left transition flex flex-col justify-between ${
+                  officerAction === act.id
+                    ? "bg-indigo-900 text-white border-indigo-900 shadow-xs"
+                    : "bg-white hover:bg-slate-50 border-slate-200 text-slate-800"
+                }`}
+              >
+                <span className="font-bold text-xs">{act.label}</span>
+                <span className={`text-[10px] mt-1 line-clamp-2 ${officerAction === act.id ? "text-indigo-200" : "text-slate-500"}`}>
+                  {act.desc}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Justification Textarea */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">
+              Mandatory Officer Justification <span className="text-rose-600">*</span>
+            </label>
+            <textarea
+              rows={3}
+              value={officerJustification}
+              onChange={(e) => setOfficerJustification(e.target.value)}
+              placeholder="State precise procurement reasons, referencing clauses, evidence, or statutory documentation..."
+              className="w-full text-xs p-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-600 font-sans"
+            />
+            <div className="flex justify-between items-center text-[10px] text-slate-400">
+              <span>Minimum 5 characters required</span>
+              <span>{officerJustification.trim().length} chars</span>
+            </div>
+          </div>
+
+          {reviewMsg && (
+            <div
+              className={`p-2.5 rounded-lg text-xs font-semibold ${
+                reviewMsg.type === "success"
+                  ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                  : "bg-rose-50 text-rose-800 border border-rose-200"
+              }`}
+            >
+              {reviewMsg.text}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              onClick={handleSubmitOfficerReview}
+              disabled={submittingReview || officerJustification.trim().length < 5}
+              className="px-4 py-2 bg-indigo-900 hover:bg-indigo-800 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center space-x-1.5"
+            >
+              {submittingReview ? (
+                <>
+                  <RotateCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Recording Action to Audit Trail...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Submit Officer Adjudication</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* APPEND-ONLY AUDIT TRAIL TIMELINE */}
+        <div className="border-t border-slate-200 pt-4">
+          <button
+            onClick={() => setShowAuditLog(!showAuditLog)}
+            className="w-full flex items-center justify-between text-xs font-bold text-slate-700 hover:text-slate-900"
+          >
+            <div className="flex items-center space-x-2">
+              <History className="w-4 h-4 text-slate-500" />
+              <span>Append-Only Audit Trail ({auditTrail.length} records)</span>
+            </div>
+            {showAuditLog ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {showAuditLog && (
+            <div className="mt-3 space-y-2">
+              {auditLoading ? (
+                <div className="text-xs text-slate-400 py-3 text-center">Loading audit records...</div>
+              ) : auditTrail.length === 0 ? (
+                <div className="text-xs text-slate-400 py-3 text-center italic bg-slate-50 rounded-lg">
+                  No audit entries recorded for this bidder yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto pr-1">
+                  {auditTrail.map((entry) => (
+                    <div key={entry.id} className="py-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`px-1.5 py-0.2 rounded text-[9px] font-extrabold uppercase border ${
+                              entry.event_type === "OFFICER_REVIEW"
+                                ? "bg-purple-100 text-purple-800 border-purple-200"
+                                : "bg-blue-100 text-blue-800 border-blue-200"
+                            }`}
+                          >
+                            {entry.event_type}
+                          </span>
+                          {entry.officer_action && (
+                            <span className="font-bold text-slate-800">
+                              Action: {entry.officer_action}
+                            </span>
+                          )}
+                          <span className="text-slate-500 font-medium">
+                            Score: {entry.score_at_recommendation.toFixed(1)}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400">
+                          {new Date(entry.action_timestamp || entry.created_at).toLocaleString()}
+                        </span>
+                      </div>
+                      {entry.officer_comment && (
+                        <div className="text-slate-700 bg-slate-50 p-1.5 rounded border border-slate-200/60 italic text-[11px]">
+                          "{entry.officer_comment}"
+                        </div>
+                      )}
+                      {!entry.officer_comment && entry.recommendation_summary && (
+                        <div className="text-slate-500 text-[11px] truncate">
+                          Summary: {entry.recommendation_summary}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SCREEN 2: Filter Bar */}

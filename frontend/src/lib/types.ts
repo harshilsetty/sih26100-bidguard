@@ -273,3 +273,86 @@ export interface TenderBidderRankingResponse {
   generated_at: string;
 }
 
+export type RecommendationCategory =
+  | "RECOMMENDED_FOR_OFFICER_REVIEW"
+  | "REQUIRES_ADDITIONAL_EVIDENCE"
+  | "HIGH_RISK_OFFICER_REVIEW";
+
+export type RecommendationSource = "AI" | "DETERMINISTIC_FALLBACK";
+
+export type OfficerAction =
+  | "ACKNOWLEDGED"
+  | "NEEDS_ADDITIONAL_EVIDENCE"
+  | "OVERRIDE_REVIEW"
+  | "FINAL_OFFICER_DECISION";
+
+export interface EvidenceReference {
+  reference_id: string;
+  clause_code?: string | null;
+  source_type: string;
+  source_name: string;
+  page?: number | null;
+  verification_id?: string | null;
+  summary: string;
+}
+
+export interface AIRecommendationResponse {
+  recommendation_id: string;
+  tender_id: string;
+  bidder_id: string;
+  bidder_name: string;
+  recommendation: RecommendationCategory;
+  recommendation_source: RecommendationSource;
+  confidence: string;
+  overall_score: number;
+  risk_level: string;
+  executive_summary: string;
+  key_reasons: string[];
+  positive_findings: string[];
+  risk_findings: string[];
+  missing_evidence: string[];
+  contradictions: string[];
+  priority_actions: string[];
+  supporting_references: EvidenceReference[];
+  model_identifier: string;
+  generated_at: string;
+  disclaimer: string;
+}
+
+export interface OfficerReviewRequest {
+  action: OfficerAction;
+  justification: string;
+  recommendation_id?: string | null;
+}
+
+export interface AuditRecordItem {
+  id: string;
+  tender_id: string;
+  bidder_id: string;
+  evaluation_id?: string | null;
+  recommendation_id: string;
+  event_type: string;
+  recommendation_type: RecommendationCategory;
+  recommendation_source: RecommendationSource;
+  score_at_recommendation: number;
+  risk_at_recommendation: string;
+  recommendation_summary: string;
+  key_reasons: string[];
+  evidence_references: EvidenceReference[];
+  positive_findings: string[];
+  risk_findings: string[];
+  priority_actions: string[];
+  model_identifier: string;
+  officer_action?: OfficerAction | null;
+  officer_comment?: string | null;
+  action_timestamp: string;
+  disclaimer: string;
+  created_at: string;
+}
+
+export interface AuditTrailResponse {
+  tender_id: string;
+  bidder_id: string;
+  records: AuditRecordItem[];
+}
+

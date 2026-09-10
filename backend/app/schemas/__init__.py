@@ -54,6 +54,16 @@ from app.schemas.scoring import (
     TenderBidderRankingResponse,
     DECISION_SUPPORT_DISCLAIMER,
 )
+from app.schemas.recommendation import (
+    RecommendationCategory,
+    RecommendationSource,
+    OfficerAction,
+    EvidenceReference,
+    AIRecommendationResponse,
+    OfficerReviewRequest,
+    AuditRecordItem,
+    AuditTrailResponse,
+)
 
 __all__ = [
     "HealthResponse",
@@ -98,4 +108,12 @@ __all__ = [
     "RankedBidderItem",
     "TenderBidderRankingResponse",
     "DECISION_SUPPORT_DISCLAIMER",
+    "RecommendationCategory",
+    "RecommendationSource",
+    "OfficerAction",
+    "EvidenceReference",
+    "AIRecommendationResponse",
+    "OfficerReviewRequest",
+    "AuditRecordItem",
+    "AuditTrailResponse",
 ]

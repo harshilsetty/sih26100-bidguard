@@ -14,6 +14,10 @@ import {
   EvaluationRunResponse,
   BidderComplianceScore,
   TenderBidderRankingResponse,
+  AIRecommendationResponse,
+  OfficerReviewRequest,
+  AuditRecordItem,
+  AuditTrailResponse,
 } from "./types";
 
 const API_BASE_URL =
@@ -402,6 +406,77 @@ export async function fetchTenderRanking(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || `Failed to fetch tender ranking: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchBidderRecommendation(
+  tenderId: string,
+  bidderId: string
+): Promise<AIRecommendationResponse | null> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/bidders/${bidderId}/recommendation`,
+    { cache: "no-store" }
+  );
+  if (res.status === 404) {
+    return null;
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch recommendation: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function generateBidderRecommendation(
+  tenderId: string,
+  bidderId: string
+): Promise<AIRecommendationResponse> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/bidders/${bidderId}/recommendation`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to generate recommendation: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function submitOfficerReview(
+  tenderId: string,
+  bidderId: string,
+  req: OfficerReviewRequest
+): Promise<AuditRecordItem> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/bidders/${bidderId}/review`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(req),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to submit officer review: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchBidderAuditTrail(
+  tenderId: string,
+  bidderId: string
+): Promise<AuditTrailResponse> {
+  const res = await fetch(
+    `${API_BASE_URL}/api/v1/tenders/${tenderId}/bidders/${bidderId}/audit`,
+    { cache: "no-store" }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `Failed to fetch audit trail: ${res.status}`);
   }
   return res.json();
 }

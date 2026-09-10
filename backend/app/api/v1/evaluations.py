@@ -30,9 +30,16 @@ from app.schemas.scoring import (
     BidderComplianceScoreResponse,
     TenderBidderRankingResponse,
 )
+from app.schemas.recommendation import (
+    AIRecommendationResponse,
+    OfficerReviewRequest,
+    AuditRecordItem,
+    AuditTrailResponse,
+)
 from app.services.evidence_fusion_service import EvidenceFusionService
 from app.services.cross_source_verifier import CrossSourceVerifier
 from app.services.scoring_service import ScoringAndRankingService
+from app.services.recommendation_service import RecommendationService
 from app.services.embedding_service import get_embedding_service
 from app.services.evidence_retrieval import retrieve_evidence_for_tender_clauses
 from app.services.compliance_engine import evaluate_bidder_compliance
@@ -644,4 +651,83 @@ async def get_tender_bidder_ranking(
         tender_id=tender.id,
         tender_title=tender.title,
         bidder_scores=bidder_scores,
+    )
+
+
+@router.post(
+    "/tenders/{tender_id}/bidders/{bidder_id}/recommendation",
+    response_model=AIRecommendationResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def generate_bidder_recommendation(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate explainable AI procurement recommendation with deterministic grounding and audit logging."""
+    await _get_tender_or_404(tender_id, db)
+    return await RecommendationService.generate_recommendation(
+        tender_id=tender_id,
+        bidder_id=bidder_id,
+        db=db,
+        use_live_llm=True,
+    )
+
+
+@router.get(
+    "/tenders/{tender_id}/bidders/{bidder_id}/recommendation",
+    response_model=AIRecommendationResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_bidder_recommendation(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Read-only: Retrieve latest existing recommendation. Returns 404 if absent. Never calls LLMs or generates data."""
+    await _get_tender_or_404(tender_id, db)
+    return await RecommendationService.get_latest_recommendation(
+        tender_id=tender_id,
+        bidder_id=bidder_id,
+        db=db,
+    )
+
+
+@router.post(
+    "/tenders/{tender_id}/bidders/{bidder_id}/review",
+    response_model=AuditRecordItem,
+    status_code=status.HTTP_200_OK,
+)
+async def submit_officer_review(
+    tender_id: UUID,
+    bidder_id: UUID,
+    req: OfficerReviewRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Record Procurement Officer review action with mandatory justification. Appends an immutable audit event."""
+    await _get_tender_or_404(tender_id, db)
+    return await RecommendationService.record_officer_review(
+        tender_id=tender_id,
+        bidder_id=bidder_id,
+        req=req,
+        db=db,
+    )
+
+
+@router.get(
+    "/tenders/{tender_id}/bidders/{bidder_id}/audit",
+    response_model=AuditTrailResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_bidder_audit_trail(
+    tender_id: UUID,
+    bidder_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    """Read-only: Retrieve complete chronological audit trail of recommendation and review actions for a bidder."""
+    await _get_tender_or_404(tender_id, db)
+    return await RecommendationService.get_audit_trail(
+        tender_id=tender_id,
+        bidder_id=bidder_id,
+        db=db,
     )
