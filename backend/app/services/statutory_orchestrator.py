@@ -46,6 +46,9 @@ AUTHORITY_IDENTIFIER_KEYS: Dict[StatutoryAuthority, List[str]] = {
     StatutoryAuthority.INCOME_TAX: ["pan", "entity_identifier", "company_name"],
     StatutoryAuthority.MII: ["certificate_reference", "mii_cert", "entity_identifier", "product_category", "company_name"],
     StatutoryAuthority.DEBARMENT: ["pan", "cin", "gstin", "gstn", "udyam_number", "udyam", "entity_identifier", "company_name", "firm_name"],
+    StatutoryAuthority.DPIIT: ["certificate_number", "dipp_number", "dpiit_number", "recognition_number", "pan", "cin", "entity_identifier", "company_name"],
+    StatutoryAuthority.EPFO: ["establishment_code", "epfo_code", "epfo_establishment_code", "pan", "entity_identifier", "establishment_name", "company_name"],
+    StatutoryAuthority.ESIC: ["esic_code", "employer_code", "esic_employer_code", "pan", "entity_identifier", "employer_name", "company_name"],
 }
 
 

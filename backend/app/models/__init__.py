@@ -11,6 +11,9 @@ from app.models.mock_sources import (
     MockIncomeTaxRecord,
     MockMIIRecord,
     MockDebarmentRecord,
+    MockDPIITRecord,
+    MockEPFORecord,
+    MockESICRecord,
 )
 from app.models.audit import RecommendationAuditRecord
 from app.models.statutory import StatutoryVerificationRecord
@@ -29,6 +32,9 @@ __all__ = [
     "MockIncomeTaxRecord",
     "MockMIIRecord",
     "MockDebarmentRecord",
+    "MockDPIITRecord",
+    "MockEPFORecord",
+    "MockESICRecord",
     "RecommendationAuditRecord",
     "StatutoryVerificationRecord",
 ]

@@ -22,6 +22,9 @@ class StatutoryAuthority(str, Enum):
     INCOME_TAX = "INCOME_TAX"
     MII = "MII"
     DEBARMENT = "DEBARMENT"
+    DPIIT = "DPIIT"
+    EPFO = "EPFO"
+    ESIC = "ESIC"
 
 
 class DebarmentTemporalStatus(str, Enum):

@@ -31,6 +31,9 @@ from app.models.mock_sources import (
     MockIncomeTaxRecord,
     MockMIIRecord,
     MockDebarmentRecord,
+    MockDPIITRecord,
+    MockEPFORecord,
+    MockESICRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -65,6 +68,21 @@ SOURCE_CONFIGS = [
         "name": "DEBARMENT",
         "file": "debarment.json",
         "model": MockDebarmentRecord,
+    },
+    {
+        "name": "DPIIT",
+        "file": "dpiit.json",
+        "model": MockDPIITRecord,
+    },
+    {
+        "name": "EPFO",
+        "file": "epfo.json",
+        "model": MockEPFORecord,
+    },
+    {
+        "name": "ESIC",
+        "file": "esic.json",
+        "model": MockESICRecord,
     },
 ]
 

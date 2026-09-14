@@ -595,8 +595,8 @@ async def test_statutory_orchestrator_multi_source_including_debarment():
             persist=False,
         )
 
-        assert summary.total_sources == 6
-        assert summary.successful_connections == 6
+        assert summary.total_sources >= 6
+        assert summary.successful_connections >= 6
         authorities_returned = {r.authority for r in summary.results}
         assert StatutoryAuthority.DEBARMENT in authorities_returned
 

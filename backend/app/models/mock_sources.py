@@ -203,3 +203,91 @@ class MockDebarmentRecord(Base, BaseModelMixin):
         Index("ix_mock_debarment_cin", "cin"),
         Index("ix_mock_debarment_dates", "start_date", "end_date"),
     )
+
+
+class MockDPIITRecord(Base, BaseModelMixin):
+    """Synthetic DPIIT / Startup India recognition records."""
+    __tablename__ = "mock_dpiit_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="DPIIT", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)  # ACTIVE, INACTIVE, EXPIRED
+
+    # DPIIT specific fields
+    certificate_number = Column(String(50), nullable=False, unique=True, index=True)
+    entity_name = Column(String(255), nullable=False, index=True)
+    pan = Column(String(10), nullable=True, index=True)
+    cin = Column(String(21), nullable=True, index=True)
+    recognition_date = Column(String(20), nullable=False)
+    valid_until = Column(String(20), nullable=True)
+    industry_sector = Column(String(100), nullable=True)
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_dpiit_pan", "pan"),
+        Index("ix_mock_dpiit_cin", "cin"),
+    )
+
+
+class MockEPFORecord(Base, BaseModelMixin):
+    """Synthetic EPFO (Employees' Provident Fund Organisation) establishment records."""
+    __tablename__ = "mock_epfo_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="EPFO", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)  # ACTIVE, INACTIVE
+
+    # EPFO specific establishment fields (NO employee details)
+    establishment_code = Column(String(50), nullable=False, unique=True, index=True)
+    establishment_name = Column(String(255), nullable=False, index=True)
+    pan = Column(String(10), nullable=True, index=True)
+    registration_date = Column(String(20), nullable=False)
+    office_name = Column(String(100), nullable=False)
+    exemption_status = Column(String(50), default="UNEXEMPTED", nullable=False)
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_epfo_pan", "pan"),
+    )
+
+
+class MockESICRecord(Base, BaseModelMixin):
+    """Synthetic ESIC (Employees' State Insurance Corporation) employer records."""
+    __tablename__ = "mock_esic_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="ESIC", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)  # ACTIVE, INACTIVE
+
+    # ESIC specific employer fields (NO employee details)
+    esic_code = Column(String(50), nullable=False, unique=True, index=True)
+    employer_name = Column(String(255), nullable=False, index=True)
+    pan = Column(String(10), nullable=True, index=True)
+    registration_date = Column(String(20), nullable=False)
+    region = Column(String(100), nullable=False)
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_esic_pan", "pan"),
+    )

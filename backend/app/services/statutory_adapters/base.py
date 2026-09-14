@@ -52,6 +52,53 @@ def sanitize_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return sanitized
 
 
+def validate_bidder_identity_consistency(
+    record_pan: Optional[str] = None,
+    record_cin: Optional[str] = None,
+    query_pan: Optional[str] = None,
+    query_cin: Optional[str] = None,
+    query_gstin: Optional[str] = None,
+    query_udyam: Optional[str] = None,
+) -> tuple[bool, Optional[str]]:
+    """
+    Validates that a located statutory record does not conflict with authoritative bidder identity.
+    Hierarchy: PAN > CIN > GSTIN > Udyam > entity_identifier.
+
+    Returns:
+        (is_consistent, conflict_reason)
+        If an identity conflict is detected with authoritative evidence, returns (False, reason).
+        If consistent or no conflicting authoritative evidence exists, returns (True, None).
+    """
+    norm_rec_pan = record_pan.strip().upper() if record_pan and str(record_pan).strip() else None
+    norm_rec_cin = record_cin.strip().upper() if record_cin and str(record_cin).strip() else None
+
+    # Expected PAN from query or derived from 15-char GSTIN (chars 2:12)
+    expected_pan = query_pan.strip().upper() if query_pan and str(query_pan).strip() else None
+    if not expected_pan and query_gstin and str(query_gstin).strip():
+        gstin_str = str(query_gstin).strip().upper()
+        if len(gstin_str) == 15:
+            expected_pan = gstin_str[2:12]
+
+    # Check PAN conflict
+    if expected_pan and norm_rec_pan:
+        if expected_pan != norm_rec_pan:
+            return (
+                False,
+                f"Authoritative PAN conflict: query PAN '{expected_pan}' does not match registry record PAN '{norm_rec_pan}'",
+            )
+
+    # Check CIN conflict
+    expected_cin = query_cin.strip().upper() if query_cin and str(query_cin).strip() else None
+    if expected_cin and norm_rec_cin:
+        if expected_cin != norm_rec_cin:
+            return (
+                False,
+                f"Authoritative CIN conflict: query CIN '{expected_cin}' does not match registry record CIN '{norm_rec_cin}'",
+            )
+
+    return (True, None)
+
+
 class BaseSourceAdapter(ABC):
     """
     Abstract contract for statutory verification sources (e.g. GSTN, Udyam, MCA, Income Tax, MII).

@@ -16,6 +16,9 @@ from app.services.statutory_adapters.mca_adapter import MCASourceAdapter
 from app.services.statutory_adapters.income_tax_adapter import IncomeTaxSourceAdapter
 from app.services.statutory_adapters.mii_adapter import MIISourceAdapter
 from app.services.statutory_adapters.debarment_adapter import DebarmentSourceAdapter
+from app.services.statutory_adapters.dpiit_adapter import DPIITSourceAdapter
+from app.services.statutory_adapters.epfo_adapter import EPFOSourceAdapter
+from app.services.statutory_adapters.esic_adapter import ESICSourceAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,9 @@ class StatutoryAdapterRegistry:
         self.register(IncomeTaxSourceAdapter())
         self.register(MIISourceAdapter())
         self.register(DebarmentSourceAdapter())
+        self.register(DPIITSourceAdapter())
+        self.register(EPFOSourceAdapter())
+        self.register(ESICSourceAdapter())
 
     def register(self, adapter: BaseSourceAdapter) -> None:
         """Register an adapter instance for its declared statutory authority."""

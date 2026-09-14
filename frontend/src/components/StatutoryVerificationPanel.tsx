@@ -150,6 +150,12 @@ export default function StatutoryVerificationPanel({
         return <CheckCircle2 className="w-4 h-4 text-indigo-600" />;
       case "DEBARMENT":
         return <AlertTriangle className="w-4 h-4 text-rose-600" />;
+      case "DPIIT":
+        return <CheckCircle2 className="w-4 h-4 text-cyan-600" />;
+      case "EPFO":
+        return <Building2 className="w-4 h-4 text-teal-600" />;
+      case "ESIC":
+        return <ShieldCheck className="w-4 h-4 text-blue-700" />;
       default:
         return <Landmark className="w-4 h-4 text-slate-600" />;
     }
@@ -360,6 +366,115 @@ export default function StatutoryVerificationPanel({
           );
         }
 
+      case "DPIIT":
+        if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-medium">
+                Ambiguous firm name match — Officer review required
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate Cert:</span>
+                <span className="font-mono text-slate-700">{p.candidate_certificate_number || "N/A"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate Name:</span>
+                <span className="text-slate-800 truncate max-w-[120px]">{p.candidate_entity_name || "N/A"}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1 text-[11px] text-slate-600">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Certificate:</span>
+              <span className="font-mono font-bold text-slate-800">{p.certificate_number || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Status:</span>
+              <span className={`font-semibold ${p.is_recognized ? "text-cyan-700" : "text-amber-700"}`}>
+                {p.recognition_status || (p.is_recognized ? "RECOGNIZED" : "NOT_RECOGNIZED")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Entity:</span>
+              <span className="text-slate-700 truncate max-w-[120px]">{p.entity_name || "N/A"}</span>
+            </div>
+            {p.valid_until && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Valid Until:</span>
+                <span className="font-mono text-slate-700">{p.valid_until}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case "EPFO":
+        if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-medium">
+                Ambiguous name match — Authoritative code required
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate Est:</span>
+                <span className="font-mono text-slate-700">{p.candidate_establishment_code || "N/A"}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1 text-[11px] text-slate-600">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Est. Code:</span>
+              <span className="font-mono font-bold text-slate-800">{p.establishment_code || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Coverage:</span>
+              <span className={`font-semibold ${p.is_covered ? "text-teal-700" : "text-slate-600"}`}>
+                {p.status || (p.is_covered ? "COVERED" : "INACTIVE")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Office:</span>
+              <span className="text-slate-700 truncate max-w-[120px]">{p.office_name || "N/A"}</span>
+            </div>
+          </div>
+        );
+
+      case "ESIC":
+        if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-medium">
+                Ambiguous name match — Authoritative code required
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate ESIC:</span>
+                <span className="font-mono text-slate-700">{p.candidate_esic_code || "N/A"}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1 text-[11px] text-slate-600">
+            <div className="flex justify-between">
+              <span className="text-slate-500">ESIC Code:</span>
+              <span className="font-mono font-bold text-slate-800">{p.esic_code || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Status:</span>
+              <span className={`font-semibold ${p.is_covered ? "text-blue-700" : "text-slate-600"}`}>
+                {p.status || (p.is_covered ? "ACTIVE" : "INACTIVE")}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Region:</span>
+              <span className="text-slate-700">{p.region || "N/A"}</span>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="text-[10px] text-slate-500 truncate">
@@ -382,7 +497,7 @@ export default function StatutoryVerificationPanel({
               Statutory Verification Orchestrator
             </h3>
             <p className="text-xs text-slate-500">
-              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII, Debarment)
+              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII, Debarment, DPIIT, EPFO, ESIC)
             </p>
           </div>
         </div>
@@ -486,7 +601,7 @@ export default function StatutoryVerificationPanel({
         </div>
       ) : (
         /* Static / Baseline Preview before trigger */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
           {[
             { name: "GSTN", label: "Goods & Services Tax", key: "GSTIN", desc: "Turnover, filing status & active registration" },
             { name: "Udyam / MSME", label: "Ministry of MSME", key: "Udyam No.", desc: "Enterprise scale (Micro/Small/Medium)" },
@@ -494,6 +609,9 @@ export default function StatutoryVerificationPanel({
             { name: "Income Tax", label: "CBDT PAN Register", key: "PAN", desc: "PAN validity & tax filing compliance" },
             { name: "Make in India", label: "DPIIT Local Content", key: "Audit Ref", desc: "Statutory verified domestic content %" },
             { name: "Debarment", label: "Central Blacklist", key: "PAN / CIN", desc: "Time-aware debarment & sanction orders" },
+            { name: "DPIIT / Startup India", label: "Startup Recognition", key: "DPIIT Cert", desc: "Startup recognition status & certificate validity" },
+            { name: "EPFO", label: "Provident Fund", key: "Est. Code", desc: "Establishment-level registration & operational status" },
+            { name: "ESIC", label: "State Insurance", key: "ESIC Code", desc: "Employer-level registration & regional compliance" },
           ].map((item, idx) => (
             <div key={idx} className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
               <div className="flex items-center justify-between">
