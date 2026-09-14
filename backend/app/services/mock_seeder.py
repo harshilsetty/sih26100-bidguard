@@ -34,6 +34,8 @@ from app.models.mock_sources import (
     MockDPIITRecord,
     MockEPFORecord,
     MockESICRecord,
+    MockNSICRecord,
+    MockDigiLockerRecord,
 )
 
 logger = logging.getLogger(__name__)
@@ -83,6 +85,16 @@ SOURCE_CONFIGS = [
         "name": "ESIC",
         "file": "esic.json",
         "model": MockESICRecord,
+    },
+    {
+        "name": "NSIC",
+        "file": "nsic.json",
+        "model": MockNSICRecord,
+    },
+    {
+        "name": "DIGILOCKER",
+        "file": "digilocker.json",
+        "model": MockDigiLockerRecord,
     },
 ]
 

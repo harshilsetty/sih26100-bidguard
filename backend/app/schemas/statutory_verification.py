@@ -25,6 +25,8 @@ class StatutoryAuthority(str, Enum):
     DPIIT = "DPIIT"
     EPFO = "EPFO"
     ESIC = "ESIC"
+    NSIC = "NSIC"
+    DIGILOCKER = "DIGILOCKER"
 
 
 class DebarmentTemporalStatus(str, Enum):

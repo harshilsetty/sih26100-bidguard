@@ -367,7 +367,7 @@ export interface AuditTrailResponse {
   records: AuditRecordItem[];
 }
 
-export type StatutoryAuthority = "GSTN" | "UDYAM" | "MCA" | "INCOME_TAX" | "MII" | "DEBARMENT" | "DPIIT" | "EPFO" | "ESIC";
+export type StatutoryAuthority = "GSTN" | "UDYAM" | "MCA" | "INCOME_TAX" | "MII" | "DEBARMENT" | "DPIIT" | "EPFO" | "ESIC" | "NSIC" | "DIGILOCKER";
 export type DebarmentTemporalStatus = "ACTIVE_ON_DATE" | "EXPIRED_BEFORE_DATE" | "STARTS_AFTER_DATE" | "UNKNOWN_PERIOD";
 export type SourceMode = "MOCK" | "LIVE";
 export type SourceConnectionStatus = "SUCCESS" | "TIMEOUT" | "UNAVAILABLE" | "RATE_LIMITED" | "AUTH_FAILURE" | "ERROR";

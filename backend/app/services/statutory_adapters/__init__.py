@@ -18,6 +18,8 @@ from app.services.statutory_adapters.debarment_adapter import DebarmentSourceAda
 from app.services.statutory_adapters.dpiit_adapter import DPIITSourceAdapter
 from app.services.statutory_adapters.epfo_adapter import EPFOSourceAdapter
 from app.services.statutory_adapters.esic_adapter import ESICSourceAdapter
+from app.services.statutory_adapters.nsic_adapter import NSICSourceAdapter
+from app.services.statutory_adapters.digilocker_adapter import DigiLockerSourceAdapter
 from app.services.statutory_adapters.registry import (
     StatutoryAdapterRegistry,
     get_statutory_registry,
@@ -36,6 +38,8 @@ __all__ = [
     "DPIITSourceAdapter",
     "EPFOSourceAdapter",
     "ESICSourceAdapter",
+    "NSICSourceAdapter",
+    "DigiLockerSourceAdapter",
     "StatutoryAdapterRegistry",
     "get_statutory_registry",
 ]

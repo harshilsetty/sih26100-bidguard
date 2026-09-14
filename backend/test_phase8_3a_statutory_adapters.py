@@ -526,10 +526,10 @@ async def test_postgresql_persistence_and_query():
 
 @pytest.mark.anyio
 async def test_orchestrator_concurrency_deterministic():
-    """Verify orchestrator executes all 9 registered adapters concurrently."""
+    """Verify orchestrator executes all registered adapters concurrently."""
     orchestrator = get_statutory_orchestrator()
     all_adapters = orchestrator.registry.get_all_adapters()
-    assert len(all_adapters) == 9
+    assert len(all_adapters) >= 9
     assert StatutoryAuthority.DPIIT in all_adapters
     assert StatutoryAuthority.EPFO in all_adapters
     assert StatutoryAuthority.ESIC in all_adapters
@@ -552,10 +552,10 @@ async def test_orchestrator_concurrency_deterministic():
 
     async with AsyncSessionLocal() as session:
         summary = await orchestrator.verify_statutory_sources(query, db=session, persist=False)
-    assert summary.total_sources == 9
-    assert summary.successful_connections == 9
+    assert summary.total_sources == len(all_adapters)
+    assert summary.successful_connections == len(all_adapters)
     assert summary.failed_connections == 0
-    assert len(summary.results) == 9
+    assert len(summary.results) == len(all_adapters)
 
     # Verify each Phase 8.3A authority result is present in summary
     authorities_in_results = {r.authority for r in summary.results}

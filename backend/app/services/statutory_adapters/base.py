@@ -59,6 +59,7 @@ def validate_bidder_identity_consistency(
     query_cin: Optional[str] = None,
     query_gstin: Optional[str] = None,
     query_udyam: Optional[str] = None,
+    record_udyam: Optional[str] = None,
 ) -> tuple[bool, Optional[str]]:
     """
     Validates that a located statutory record does not conflict with authoritative bidder identity.
@@ -71,6 +72,7 @@ def validate_bidder_identity_consistency(
     """
     norm_rec_pan = record_pan.strip().upper() if record_pan and str(record_pan).strip() else None
     norm_rec_cin = record_cin.strip().upper() if record_cin and str(record_cin).strip() else None
+    norm_rec_udyam = record_udyam.strip().upper() if record_udyam and str(record_udyam).strip() else None
 
     # Expected PAN from query or derived from 15-char GSTIN (chars 2:12)
     expected_pan = query_pan.strip().upper() if query_pan and str(query_pan).strip() else None
@@ -94,6 +96,15 @@ def validate_bidder_identity_consistency(
             return (
                 False,
                 f"Authoritative CIN conflict: query CIN '{expected_cin}' does not match registry record CIN '{norm_rec_cin}'",
+            )
+
+    # Check Udyam conflict
+    expected_udyam = query_udyam.strip().upper() if query_udyam and str(query_udyam).strip() else None
+    if expected_udyam and norm_rec_udyam:
+        if expected_udyam != norm_rec_udyam:
+            return (
+                False,
+                f"Authoritative Udyam conflict: query Udyam '{expected_udyam}' does not match registry record Udyam '{norm_rec_udyam}'",
             )
 
     return (True, None)

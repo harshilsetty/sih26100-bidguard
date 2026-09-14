@@ -19,6 +19,8 @@ from app.services.statutory_adapters.debarment_adapter import DebarmentSourceAda
 from app.services.statutory_adapters.dpiit_adapter import DPIITSourceAdapter
 from app.services.statutory_adapters.epfo_adapter import EPFOSourceAdapter
 from app.services.statutory_adapters.esic_adapter import ESICSourceAdapter
+from app.services.statutory_adapters.nsic_adapter import NSICSourceAdapter
+from app.services.statutory_adapters.digilocker_adapter import DigiLockerSourceAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,8 @@ class StatutoryAdapterRegistry:
         self.register(DPIITSourceAdapter())
         self.register(EPFOSourceAdapter())
         self.register(ESICSourceAdapter())
+        self.register(NSICSourceAdapter())
+        self.register(DigiLockerSourceAdapter())
 
     def register(self, adapter: BaseSourceAdapter) -> None:
         """Register an adapter instance for its declared statutory authority."""

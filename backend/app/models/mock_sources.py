@@ -291,3 +291,71 @@ class MockESICRecord(Base, BaseModelMixin):
     __table_args__ = (
         Index("ix_mock_esic_pan", "pan"),
     )
+
+
+class MockNSICRecord(Base, BaseModelMixin):
+    """Synthetic NSIC (National Small Industries Corporation) Single Point Registration Scheme records."""
+    __tablename__ = "mock_nsic_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="NSIC", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    status = Column(String(50), nullable=False, index=True)  # ACTIVE, INACTIVE, EXPIRED
+
+    # NSIC specific fields
+    registration_number = Column(String(50), nullable=False, unique=True, index=True)
+    entity_name = Column(String(255), nullable=False, index=True)
+    pan = Column(String(10), nullable=True, index=True)
+    udyam_number = Column(String(50), nullable=True, index=True)
+    registration_status = Column(String(50), nullable=False)  # ACTIVE, INACTIVE, EXPIRED
+    issue_date = Column(String(20), nullable=False)  # YYYY-MM-DD
+    expiry_date = Column(String(20), nullable=True)  # YYYY-MM-DD or None
+    monetary_limit = Column(Float, nullable=True)
+    category = Column(String(100), nullable=True)  # MICRO, SMALL, MANUFACTURING, SERVICES
+    store_details = Column(String(100), nullable=True)
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_nsic_pan", "pan"),
+        Index("ix_mock_nsic_udyam", "udyam_number"),
+    )
+
+
+class MockDigiLockerRecord(Base, BaseModelMixin):
+    """Synthetic DigiLocker document verification/provenance records."""
+    __tablename__ = "mock_digilocker_records"
+
+    verification_id = Column(String(100), nullable=False, unique=True, index=True)
+    source = Column(String(50), default="DIGILOCKER", nullable=False)
+    entity_identifier = Column(String(100), nullable=False, index=True)
+    document_reference = Column(String(100), nullable=False, unique=True, index=True)
+
+    # DigiLocker specific document & provenance fields (NO citizen PII, NO Aadhaar, NO secrets)
+    document_type = Column(String(100), nullable=False)
+    issuer = Column(String(100), nullable=False)
+    issuer_identifier = Column(String(50), nullable=False)
+    subject_entity_name = Column(String(255), nullable=False, index=True)
+    subject_pan = Column(String(10), nullable=True, index=True)
+    subject_cin = Column(String(21), nullable=True, index=True)
+    issued_at = Column(String(20), nullable=False)
+    document_status = Column(String(50), nullable=False)  # ACTIVE, EXPIRED, REVOKED
+    signature_status = Column(String(50), nullable=False)  # VALID, INVALID, NOT_VERIFIED
+    verification_result = Column(String(50), nullable=False)  # VERIFIED, NOT_FOUND, UNVERIFIED, FAILED
+
+    # Verification metadata
+    verified_fields = Column(JSON, default=dict, nullable=False)
+    verification_timestamp = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    raw_response = Column(JSON, default=dict, nullable=False)
+    is_mock = Column(Boolean, default=True, nullable=False)
+    source_type = Column(String(100), default=MOCK_SOURCE_TYPE_LABEL, nullable=False)
+
+    __table_args__ = (
+        Index("ix_mock_digilocker_pan", "subject_pan"),
+        Index("ix_mock_digilocker_cin", "subject_cin"),
+    )

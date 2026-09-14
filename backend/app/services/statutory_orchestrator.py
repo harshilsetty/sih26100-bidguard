@@ -49,6 +49,8 @@ AUTHORITY_IDENTIFIER_KEYS: Dict[StatutoryAuthority, List[str]] = {
     StatutoryAuthority.DPIIT: ["certificate_number", "dipp_number", "dpiit_number", "recognition_number", "pan", "cin", "entity_identifier", "company_name"],
     StatutoryAuthority.EPFO: ["establishment_code", "epfo_code", "epfo_establishment_code", "pan", "entity_identifier", "establishment_name", "company_name"],
     StatutoryAuthority.ESIC: ["esic_code", "employer_code", "esic_employer_code", "pan", "entity_identifier", "employer_name", "company_name"],
+    StatutoryAuthority.NSIC: ["registration_number", "nsic_number", "nsic_registration_number", "udyam_number", "udyam", "pan", "entity_identifier", "company_name"],
+    StatutoryAuthority.DIGILOCKER: ["document_reference", "document_uri", "doc_ref", "document_id", "doc_id", "pan", "cin", "entity_identifier"],
 }
 
 

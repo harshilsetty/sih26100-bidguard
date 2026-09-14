@@ -156,6 +156,10 @@ export default function StatutoryVerificationPanel({
         return <Building2 className="w-4 h-4 text-teal-600" />;
       case "ESIC":
         return <ShieldCheck className="w-4 h-4 text-blue-700" />;
+      case "NSIC":
+        return <Building2 className="w-4 h-4 text-emerald-700" />;
+      case "DIGILOCKER":
+        return <FileCheck className="w-4 h-4 text-indigo-700" />;
       default:
         return <Landmark className="w-4 h-4 text-slate-600" />;
     }
@@ -475,6 +479,84 @@ export default function StatutoryVerificationPanel({
           </div>
         );
 
+      case "NSIC":
+        if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-medium">
+                {p.conflict_detected ? "Identity conflict detected — Officer review required" : "Ambiguous firm name match — Registration code required"}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Candidate Reg:</span>
+                <span className="font-mono text-slate-700">{p.candidate_registration_number || p.queried_registration_number || "N/A"}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1 text-[11px] text-slate-600">
+            <div className="flex justify-between">
+              <span className="text-slate-500">SPRS Reg:</span>
+              <span className="font-mono font-bold text-slate-800">{p.registration_number || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Status:</span>
+              <span className={`font-semibold ${p.is_registered ? "text-emerald-700" : "text-amber-700"}`}>
+                {p.status || (p.is_registered ? "ACTIVE" : "INACTIVE")}
+              </span>
+            </div>
+            {p.monetary_limit && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Monetary Limit:</span>
+                <span className="font-semibold text-slate-800">₹{p.monetary_limit} Lakhs</span>
+              </div>
+            )}
+            {p.expiry_date && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Valid Until:</span>
+                <span className="font-mono text-slate-700">{p.expiry_date}</span>
+              </div>
+            )}
+          </div>
+        );
+
+      case "DIGILOCKER":
+        if (p.is_ambiguous_match) {
+          return (
+            <div className="space-y-1.5 text-[11px]">
+              <div className="p-1.5 rounded bg-amber-50 border border-amber-200 text-amber-900 text-[10px] font-medium">
+                {p.conflict_detected ? "Subject identity conflict — Officer review required" : "Specific document reference or subject identifier required"}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Document Ref:</span>
+                <span className="font-mono text-slate-700">{p.queried_document_reference || "N/A"}</span>
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="space-y-1 text-[11px] text-slate-600">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doc Type:</span>
+              <span className="font-medium text-slate-800 truncate max-w-[120px]">{p.document_type || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Issuer:</span>
+              <span className="text-slate-700 truncate max-w-[120px]">{p.issuer || "N/A"}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Signature:</span>
+              <span className={`font-semibold ${p.signature_status === "VALID" ? "text-emerald-700" : "text-rose-700"}`}>
+                {p.signature_status || "N/A"}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doc Ref:</span>
+              <span className="font-mono text-slate-700 truncate max-w-[120px]">{p.document_reference || "N/A"}</span>
+            </div>
+          </div>
+        );
+
       default:
         return (
           <div className="text-[10px] text-slate-500 truncate">
@@ -497,7 +579,7 @@ export default function StatutoryVerificationPanel({
               Statutory Verification Orchestrator
             </h3>
             <p className="text-xs text-slate-500">
-              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII, Debarment, DPIIT, EPFO, ESIC)
+              Authoritative multi-source register checks (GSTN, Udyam, MCA, Income Tax, MII, Debarment, DPIIT, EPFO, ESIC, NSIC, DigiLocker)
             </p>
           </div>
         </div>
@@ -612,6 +694,8 @@ export default function StatutoryVerificationPanel({
             { name: "DPIIT / Startup India", label: "Startup Recognition", key: "DPIIT Cert", desc: "Startup recognition status & certificate validity" },
             { name: "EPFO", label: "Provident Fund", key: "Est. Code", desc: "Establishment-level registration & operational status" },
             { name: "ESIC", label: "State Insurance", key: "ESIC Code", desc: "Employer-level registration & regional compliance" },
+            { name: "NSIC", label: "National Small Industries", key: "SPRS Reg", desc: "Single Point Registration Scheme & monetary limit" },
+            { name: "DigiLocker", label: "Document Provenance", key: "Doc URI", desc: "Cryptographic verification & digital signature audit" },
           ].map((item, idx) => (
             <div key={idx} className="bg-slate-50/70 border border-slate-200 rounded-md p-3.5 space-y-2.5">
               <div className="flex items-center justify-between">

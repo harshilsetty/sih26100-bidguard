@@ -188,6 +188,8 @@ export default function MockDataExplorerPage() {
     if (activeSource === "udyam") return item.udyam_registration_number;
     if (activeSource === "mca") return item.cin;
     if (activeSource === "income_tax" || activeSource === "income-tax") return item.pan;
+    if (activeSource === "nsic") return item.registration_number;
+    if (activeSource === "digilocker") return item.document_reference;
     return item.verification_id;
   };
 
@@ -197,6 +199,8 @@ export default function MockDataExplorerPage() {
     if (activeSource === "mca") return item.authorized_capital_cr ? `₹${item.authorized_capital_cr} Cr Auth Cap` : item.company_type;
     if (activeSource === "income_tax") return `${item.taxpayer_type} • ${item.pan_status}`;
     if (activeSource === "mii") return `${item.verified_local_content}% Domestic Content`;
+    if (activeSource === "nsic") return item.monetary_limit ? `Limit: ₹${item.monetary_limit}L • ${item.category}` : item.category;
+    if (activeSource === "digilocker") return `${item.document_type} • Sig: ${item.signature_status}`;
     return null;
   };
 
@@ -232,6 +236,8 @@ export default function MockDataExplorerPage() {
     { key: "mca", label: "MCA", title: "Ministry of Corporate Affairs", count: 1000 },
     { key: "income_tax", label: "INCOME TAX", title: "Income Tax / PAN", count: 1000 },
     { key: "mii", label: "MAKE IN INDIA", title: "Local Content Audit", count: 1000 },
+    { key: "nsic", label: "NSIC / SPRS", title: "Single Point Registration Scheme", count: 1000 },
+    { key: "digilocker", label: "DIGILOCKER", title: "DigiLocker Document Verification", count: 1000 },
   ];
 
   return (

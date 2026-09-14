@@ -25,6 +25,8 @@ from app.models.mock_sources import (
     MockMCARecord,
     MockIncomeTaxRecord,
     MockMIIRecord,
+    MockNSICRecord,
+    MockDigiLockerRecord,
     MOCK_SOURCE_TYPE_LABEL,
 )
 
@@ -37,6 +39,8 @@ SOURCE_MODELS: Dict[str, Any] = {
     "income_tax": MockIncomeTaxRecord,
     "income-tax": MockIncomeTaxRecord,
     "mii": MockMIIRecord,
+    "nsic": MockNSICRecord,
+    "digilocker": MockDigiLockerRecord,
 }
 
 CANONICAL_NAMES: Dict[str, str] = {
@@ -46,6 +50,8 @@ CANONICAL_NAMES: Dict[str, str] = {
     "income_tax": "INCOME_TAX",
     "income-tax": "INCOME_TAX",
     "mii": "MII",
+    "nsic": "NSIC",
+    "digilocker": "DIGILOCKER",
 }
 
 
@@ -66,7 +72,7 @@ def _model_to_dict(obj: Any) -> Dict[str, Any]:
 def _get_model_or_404(source_key: str):
     source_lower = source_key.lower().strip()
     if source_lower not in SOURCE_MODELS:
-        valid_keys = ["gstn", "udyam", "mca", "income_tax", "mii"]
+        valid_keys = list(SOURCE_MODELS.keys())
         raise HTTPException(
             status_code=404,
             detail=f"Unknown mock source registry '{source_key}'. Valid sources are: {valid_keys}",
@@ -80,7 +86,7 @@ def _get_model_or_404(source_key: str):
 
 @router.get("/mock-sources", response_model=Dict[str, Any])
 async def get_mock_sources_summary(db: AsyncSession = Depends(get_db)):
-    """Return overview counts and metadata across all 5 mock registries."""
+    """Return overview counts and metadata across mock registries."""
     summary: Dict[str, Any] = {}
     total_records = 0
 
@@ -120,19 +126,37 @@ async def get_mock_sources_summary(db: AsyncSession = Depends(get_db)):
             "primary_key": "verification_id",
             "description": "Audited domestic local content percentage & Class-I preference certification",
         },
+        "nsic": {
+            "name": "NSIC",
+            "title": "National Small Industries Corporation (SPRS)",
+            "table": "mock_nsic_records",
+            "primary_key": "registration_number",
+            "description": "Single Point Registration Scheme validity, monetary limit, and store classification",
+        },
+        "digilocker": {
+            "name": "DIGILOCKER",
+            "title": "DigiLocker Document Verification",
+            "table": "mock_digilocker_records",
+            "primary_key": "document_reference",
+            "description": "Electronic document provenance, issuer verification, and digital signature status",
+        },
     }
 
+    core_keys = {"gstn", "udyam", "mca", "income_tax", "mii"}
     for key, model in [
         ("gstn", MockGSTNRecord),
         ("udyam", MockUdyamRecord),
         ("mca", MockMCARecord),
         ("income_tax", MockIncomeTaxRecord),
         ("mii", MockMIIRecord),
+        ("nsic", MockNSICRecord),
+        ("digilocker", MockDigiLockerRecord),
     ]:
         stmt = select(func.count()).select_from(model)
         count_res = await db.execute(stmt)
         count = count_res.scalar_one()
-        total_records += count
+        if key in core_keys:
+            total_records += count
         summary[key] = {**meta[key], "count": count}
 
     return {
